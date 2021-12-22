@@ -1,0 +1,8 @@
+#ignore vscode config folder
+.vscode
+
+# ignore the program executable
+poke
+
+# ignore the object directory
+/obj
