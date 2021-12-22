@@ -5,13 +5,13 @@
 namespace Debug
 {
   using std::cout;
-	using std::cerr;
-	using std::endl;
+  using std::cerr;
+  using std::endl;
 
   // switch to zero to turn off general program output
-  constexpr unsigned debug_output_level = 0; // { 0: Print only errors and crash reports    1: Log all program output }
+  constexpr unsigned debug_output_level = 1; // { 0: Print only errors and crash reports    1: Log all program output }
 
-	extern void GLAPIENTRY myDebugCallback(
+  extern void GLAPIENTRY my_debug_callback(
     GLenum e_gl_debug_source,
     GLenum e_gl_debug_type,
     GLuint id,
@@ -21,7 +21,7 @@ namespace Debug
     const void *param
   );
 
-	void submitDebugCallbackFunction();
+  void submit_debug_callback();
 
   template<typename ... Args>
   void log(Args&&... args)
@@ -30,8 +30,8 @@ namespace Debug
       (cout << ... << args) << '\n';
   }
 
-	template<typename ... Args>
-	void log_error_abort(Args&&... args)
+  template<typename ... Args>
+  void log_error_abort(Args&&... args)
   {
 		(cerr << ... << args) << '\n'; // fold expr (C++17): Binary left fold (I op ... op A) becomes: ((((I op a1) op a2) op ...) op aN)
 		exit(EXIT_FAILURE);
