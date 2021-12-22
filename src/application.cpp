@@ -57,8 +57,8 @@ void Application::update_fps_average(Uint32 dt)
   // 2^32 / 60 = number of seconds this can run at 60 fps = 71,000,000s
   // = 1,193,000 minutes = 20,000 hours = 828 days. so no worries.
   static unsigned cnt= 0;
-  stats.cma_fps += (dt-stats.cma_fps)/(++cnt);
-  Debug::log("[AVG FPS] ",stats.cma_fps);
+  stats.cma_fdt += (dt-stats.cma_fdt)/(++cnt);
+  Debug::log("[AVG FPS] ",stats.cma_fdt);
 }
 
 void Application::clean()

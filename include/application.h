@@ -15,7 +15,7 @@ struct SDL_App_Data
 
 struct App_Stats
 {
-  float cma_fps= 0.0f; // cumulative moving average frames per second
+  float cma_fdt= 0.0f; // cumulative-moving-average of frame-delta-time in milliseconds
 };
 
 class Application
