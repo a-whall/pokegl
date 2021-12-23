@@ -59,3 +59,23 @@ void Debug::submit_debug_callback() {
     GL_TRUE                 // bool for whether the msgs in the array should be enabled or disabled
   );
 }
+
+const char* Debug::str(Debug_Source_enum src_enum)
+{
+  switch(src_enum)
+  {
+    case animation:   return "[Animation] ";
+    case application: return "[Application] ";
+    case camera:      return "[Camera] ";
+    case collision:   return "[Collision] ";
+    case compiler:    return "[Compiler] ";
+    case stats:       return "[Stats] ";
+    case game:        return "[Game] ";
+    case map:         return "[Map] ";
+    case player:      return "[Plaer] ";
+    case scene:       return "[Scene] ";
+    case shader:      return "[Shader] ";
+    case world:       return "[World] ";
+    default:          return "[      ] ";
+  }
+}

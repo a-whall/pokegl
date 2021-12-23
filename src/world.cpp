@@ -1,5 +1,6 @@
 #include "world.h"
 #include <iostream>
+#include "debug.h"
 
 static bool world_already_loaded = false;
 
@@ -12,7 +13,7 @@ World_node* load_world(Map_ID_enum mID)
 
   if (!world_already_loaded)
   {
-    std::cout << "first call\n";
+    Debug::log_from(Debug::world,"first call to load world");
     // construct the entire set of world nodes
     nbt_nbt = new World_node(new_bark_town);
     r29_nbt = new World_node(route_29_nbt);

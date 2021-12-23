@@ -8,14 +8,32 @@ namespace Debug
   using std::cerr;
   using std::endl;
 
-  // switch to zero to turn off general program output
-  constexpr unsigned debug_output_level = 1; // { 0: Print only errors and crash reports    1: Log all program output }
+  enum Debug_Source_enum
+  {
+    animation   = 0x0001,
+    application = 0x0002,
+    camera      = 0x0004,
+    collision   = 0x0008,
+    compiler    = 0x0010,
+    stats       = 0x0020,
+    game        = 0x0040,
+    map         = 0x0080,
+    player      = 0x0100,
+    scene       = 0x0200,
+    shader      = 0x0400,
+    world       = 0x0800,
+    all         = 0xffff
+  };
+
+  // set to zero to turn off general program output, operator<OR> various source enums to "turn on" that output source 
+  // note: prior to compiling, you may need to 'make clean' for changes to affect the whole program correctly.
+  constexpr unsigned output_filter= compiler | shader | stats;
 
   extern void GLAPIENTRY my_debug_callback(
-    GLenum e_gl_debug_source,
-    GLenum e_gl_debug_type,
-    GLuint id,
-		GLenum e_gl_debug_severity,
+    GLenum gl_debug_source,
+    GLenum gl_debug_type,
+    GLuint gl_error_id,
+		GLenum gl_debug_severity,
     GLsizei length,
     const GLchar *msg,
     const void *param
@@ -23,23 +41,36 @@ namespace Debug
 
   void submit_debug_callback();
 
+  const char* str(Debug_Source_enum src_enum);
+
   template<typename ... Args>
   void log(Args&&... args)
   {
-    if (debug_output_level > 0)
-      (cout << ... << args) << '\n';
+    (cout << ... << args) << '\n';
   }
 
   template<typename ... Args>
   void log_error_abort(Args&&... args)
   {
-		(cerr << ... << args) << '\n'; // fold expr (C++17): Binary left fold (I op ... op A) becomes: ((((I op a1) op a2) op ...) op aN)
-		exit(EXIT_FAILURE);
-	}
+    (cerr << ... << args) << '\n'; // fold expr (C++17): Binary left fold (I op ... op A) becomes: ((((I op a1) op a2) op ...) op aN)
+    exit(EXIT_FAILURE);
+  }
 
   template<typename ... Args>
   void log_error(Args&&... args)
   {
     (cerr << ... << args) << '\n';
+  }
+
+  template<typename ... Args>
+  void log_from(Debug_Source_enum src_enum, Args&&... args)
+  { // TODO: check assembly-code to make sure the compiler actually removes log calls when output_filter is 0
+    // source_enum is gauranteed to have only one 1 bit, so when anded with the output filter,
+    // the result of the expression below will be non-zero iff the source is turned on at compile time.
+    if ( (src_enum & output_filter) != 0 )
+    {
+      cout << str(src_enum);
+      log(std::forward<Args>(args)...);
+    }
   }
 }

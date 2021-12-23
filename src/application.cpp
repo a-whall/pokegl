@@ -58,11 +58,11 @@ void Application::update_fps_average(Uint32 dt)
   // = 1,193,000 minutes = 20,000 hours = 828 days. so no worries.
   static unsigned cnt= 0;
   stats.cma_fdt += (dt-stats.cma_fdt)/(++cnt);
-  Debug::log("[AVG FPS] ",stats.cma_fdt);
 }
 
 void Application::clean()
 {
+  Debug::log_from(Debug::stats,"average fps: ", stats.cma_fdt); // can potentially change this to print other program stats as well 
   scene_manager.clean();             // delete scene objects
   if (sdl.p_music != nullptr)        // if music is currently loaded
     Mix_FreeMusic(sdl.p_music);         // turn it off
@@ -99,32 +99,33 @@ void Application::prep_scene()
 // Note: SDL_init() automatically initializes the Event Handling, File I/O and Threading subsystems.
 void Application::init_library_SDL()
 {
-  using namespace Debug;
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)         // initialize SDL, as well as flagged, subsystems
-    log_error_abort("[Application] ", SDL_GetError());
+    Debug::log_error_abort("[Application] ", SDL_GetError());
   if (IMG_Init(IMG_INIT_PNG) == 0)                           // load image-format support indicated by flag(s)
-    log_error("[Application] ", IMG_GetError());
+    Debug::log_error("[Application] ", IMG_GetError());
   if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) // initialize SDL_Mixer API
-    log_error("[Application] ", Mix_GetError());
+    Debug::log_error("[Application] ", Mix_GetError());
   if (!Mix_Init(MIX_INIT_MP3))                               // initialize audio support for MP3 files (does nothing but return true if already initialized)
-    log_error("[Application] ", Mix_GetError());
-  log("[Application] ","SDL subsystems initialized");
+    Debug::log_error("[Application] ", Mix_GetError());
+  Debug::log_from(Debug::application,"SDL subsystems initialized");
 }
 
 // Create a window with the exact same paremeters of Application::init. Initialize a pointer to SDL's keystates array which lets you know which keys are pressed (the array is updated by calling 'SDL_PumpEvents')
 void Application::init_window_and_keystates_SDL(const char* title, int x, int y, int w, int h, int fullscreen)
 {
+  using namespace Debug;
   sdl.p_window= SDL_CreateWindow(title, x, y, w, h, fullscreen);
   sdl.p_key_states= SDL_GetKeyboardState(nullptr);
   scene_manager.keystates= sdl.p_key_states;
-  Debug::log("[Application] ","SDL window initialized");
+  log_from(Debug::application,"SDL window initialized");
   scene_manager.init_camera(x,y);
-  Debug::log("[Application] ","camera initialized");
+  log_from(Debug::application,"camera initialized");
 }
 
 // Create an OpenGL context, glsl = version 4.5, core profile => forward compatibility glsl
 void Application::config_opengl_context_SDL()
 {
+  using namespace Debug;
   sdl.context = SDL_GL_CreateContext(sdl.p_window);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
@@ -132,7 +133,7 @@ void Application::config_opengl_context_SDL()
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-  Debug::log("[Application] ","OpenGL context attributes configured via SDL");
+  log_from(Debug::application,"OpenGL context attributes configured via SDL");
 }
 
 void Application::wrangle_modern_opengl_api_GLEW()
@@ -141,7 +142,7 @@ void Application::wrangle_modern_opengl_api_GLEW()
   GLenum glewERR = glewInit();
   if (glewERR != GLEW_OK)
     Debug::log_error("[Application] ","glew error : ", glewGetErrorString(glewERR));
-  Debug::log("[Application] ","OpenGL function pointers loaded");
+  Debug::log_from(Debug::application,"OpenGL function pointers loaded");
 }
 
 void Application::config_opengl_debug_flags()
@@ -157,7 +158,7 @@ void Application::print_opengl_extensions()
   glGetIntegerv(GL_NUM_EXTENSIONS, &n_extensions);
   std::cout << "[Application] " << n_extensions << " OpenGL extensions found to be implemented by this hardware\n";
   for (int i = 0; i < n_extensions; i++)
-    std::cout << "\t\t" << glGetStringi(GL_EXTENSIONS, i) << "\n";
+    std::cout << "\t\t" << glGetStringi(GL_EXTENSIONS, i) << '\n';
 }
 
 // load an MP3 file, and start playing it. Initializes support for MP3 if it wasnt already initialized.

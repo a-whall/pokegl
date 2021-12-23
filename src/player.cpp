@@ -292,7 +292,7 @@ void Player::walk_anim_end_update_coordinates() {
 void Player::walk_animation(int *frame_counter)
 {
   if (*frame_counter < 1)
-    Debug::log_error_abort("[Actor::Player] error: walk_animation frame_counter should be at least 1 and was not.");
+    Debug::log_error_abort("[Player] error: walk_animation frame_counter should be at least 1 and was not.");
 
   if (*frame_counter == 4)
     update_frame_to_idle();

@@ -23,11 +23,11 @@ namespace Animation
   void State::add_transition(const char *event, State *transitionState)
   {
     if (event_map.find(event) == event_map.end()) {
-      Debug::log("[Animation] ","transition from ",name," to ",transitionState->get_name()," on event ",event); 
+      Debug::log_from(Debug::animation,"transition from ",name," to ",transitionState->get_name()," on event ",event); 
       event_map[event]= transitionState;
     }
     else
-      Debug::log("[Animation] ",name," already has transition for event ",event);
+      Debug::log_from(Debug::animation,name," already has transition for event ",event);
   }
 
   State* State::change(const char *event, Shader *shader)

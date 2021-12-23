@@ -7,7 +7,7 @@ namespace Collision
 {
   const GLubyte* load(Map_ID_enum mID)
   {
-    Debug::log("[Collision] ","loading mapID ",mID);
+    Debug::log_from(Debug::collision,"loading mapID ",mID);
     switch (mID)
     {
       case player_house_fl1:  return player_house_fl1_collision_data;

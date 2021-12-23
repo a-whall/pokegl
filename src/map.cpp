@@ -38,8 +38,8 @@ Map::Map(Map_ID_enum mID, Camera &cam, Shader &shader)
   collision_ptr= Collision::load(mID);
   current_mID= mID;
   world_node= load_world(mID);
-  if (world_node == nullptr) std::cout << "world node null\n";
-  else std::cout << world_node->mID << '\n';
+  // if (world_node == nullptr) std::cout << "world node null\n";
+  // else std::cout << world_node->mID << '\n';
 }
 
 
@@ -139,7 +139,7 @@ bool Map::allows_move_to(int x, int y)
   // If in bounds get collision bit
   if (move_allowed)
     move_allowed= (collision_ptr[i/8] >> (7 - (i%8))) & 1;
-  Debug::log("[Map] ","move allowed to (",x,",",y,"): ",move_allowed);
+  Debug::log_from(Debug::map,"move allowed to (",x,",",y,"): ",move_allowed);
   return move_allowed;
 }
 
