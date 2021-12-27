@@ -11,18 +11,18 @@
 
 const char* get_asset_path(Map_ID_enum mID)
 {
+  Debug::log_from(Debug::map, "getting asset path (mID:", +mID,')');
   switch(mID)
   {
+    case new_bark_town:     return "assets/map/new_bark_town.png";
     case player_house_fl1:  return "assets/map/player_house_fl1.png";
     case player_house_fl2:  return "assets/map/player_house_fl2.png";
-    case new_bark_town:     return "assets/map/new_bark_town.png";
-    case route_29_nbt:      return "assets/map/route_29_nbt.png";
-    case route_29_cgc:      return "assets/map/route_29_cgc.png";
-    case cherry_grove_city: return "assets/map/cherry_grove_city.png";
-    case route_27_nbt:      return "assets/map/route_27_nbt.png";
     case elms_lab:          return "assets/map/elms_lab.png";
-    case nbt_house_1:       return "assets/map/nbt_house1.png";
-    case nbt_house_2:       return "assets/map/nbt_house2.png";
+    case new_bark_house_1:  return "assets/map/nbt_house1.png";
+    case new_bark_house_2:  return "assets/map/nbt_house2.png";
+    case route_29:          return "assets/map/route_29_nbt.png";
+    case cherry_grove_city: return "assets/map/cherry_grove_city.png";
+    default:                return "file due to get_asset_path error"; // makes sense for call to SDL_GetError()
   }
 }
 
@@ -37,9 +37,6 @@ Map::Map(Map_ID_enum mID, Camera &cam, Shader &shader)
   model= glm::translate(model, glm::vec3((float)(w >> 5) - 0.25f, (float)(h >> 5) - 0.25f, 0.0f)); // shift map s.t. 0,0 be the middle of the bottom-left-most tile
   collision_ptr= Collision::load(mID);
   current_mID= mID;
-  world_node= load_world(mID);
-  // if (world_node == nullptr) std::cout << "world node null\n";
-  // else std::cout << world_node->mID << '\n';
 }
 
 
@@ -55,7 +52,7 @@ void Map::init_texture(const char* mapTexPath)
 {
   SDL_Surface *loaded_image = IMG_Load(mapTexPath);
   if(loaded_image == nullptr)
-    Debug::log_error_abort("[Map] error: ",SDL_GetError());
+    Debug::log_error_abort("[Map] init_texture error: ",SDL_GetError());
   w_tiles = (w = loaded_image->w) >> 4;
   h_tiles = (h = loaded_image->h) >> 4;
   glActiveTexture(GL_TEXTURE0);
@@ -90,7 +87,7 @@ void Map::init_buffers()
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ebo_data), ebo_data, GL_STATIC_DRAW);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vbo_data), vbo_data, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vbo_data), vbo_data, GL_DYNAMIC_DRAW);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, false, 20, (void*)0);
   glEnableVertexAttribArray(1);
@@ -148,7 +145,7 @@ void Map::change(Map_ID_enum mID)
 {
   SDL_Surface* li = IMG_Load(get_asset_path(mID));          // loaded image
   if (li == nullptr)
-    Debug::log_error_abort("[Map] error: ",SDL_GetError()); // error, abort
+    Debug::log_error_abort("[Map] change error: ",SDL_GetError()); // error, abort
   w_tiles = (w = li->w) >> 4;                               // update class data
   h_tiles = (h = li->h) >> 4;
   glActiveTexture(GL_TEXTURE0);                                  
@@ -175,5 +172,4 @@ void Map::change(Map_ID_enum mID)
   mv= cam.get_WorldToView_Matrix() * model;
   collision_ptr= Collision::load(mID);
   current_mID= mID;
-  world_node= load_world(mID);
 }
