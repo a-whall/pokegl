@@ -51,7 +51,7 @@ void Application::step(float frame_time)
   }
 }
 
-void Application::update_fps_average(Uint32 dt)
+void Application::update_fdt_average(Uint32 dt)
 {
   // This function will last for 2^32 frames before cnt overflows
   // 2^32 / 60 = number of seconds this can run at 60 fps = 71,000,000s
@@ -62,7 +62,7 @@ void Application::update_fps_average(Uint32 dt)
 
 void Application::clean()
 {
-  Debug::log_from(Debug::stats,"average fps: ", stats.cma_fdt); // can potentially change this to print other program stats as well 
+  Debug::log_from(Debug::stats,"average fps: ", stats.cma_fdt); // may change this to print other program stats as well 
   scene_manager.clean();             // delete scene objects
   if (sdl.p_music != nullptr)        // if music is currently loaded
     Mix_FreeMusic(sdl.p_music);         // turn it off
@@ -78,14 +78,14 @@ bool Application::is_running()
   return running;
 }
 
-//////////////////////////////////////////
-// These 2 functions are to be override //
-//////////////////////////////////////////
-void Application::on_init() {}          //
-void Application::on_update(float t) {} //
-//////////////////////////////////////////
+/////////////////////////////////////////////////
+// These 2 functions are meant to be overridden /
+/////////////////////////////////////////////////
+void Application::on_init() {}                 //
+void Application::on_update(float t) {}        //
+/////////////////////////////////////////////////
 
-// Sets some OpenGL functionality
+// enables some OpenGL rendering capabilities
 void Application::prep_scene()
 {
   glClearColor(0.02f, 0.02f, 0.02f, 1.0f);
@@ -125,7 +125,6 @@ void Application::init_window_and_keystates_SDL(const char* title, int x, int y,
 // Create an OpenGL context, glsl = version 4.5, core profile => forward compatibility glsl
 void Application::config_opengl_context_SDL()
 {
-  using namespace Debug;
   sdl.context = SDL_GL_CreateContext(sdl.p_window);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
@@ -133,45 +132,47 @@ void Application::config_opengl_context_SDL()
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
   SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
   SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-  log_from(Debug::application,"OpenGL context attributes configured via SDL");
+  Debug::log_from(Debug::application,"OpenGL context attributes configured via SDL");
 }
 
 void Application::wrangle_modern_opengl_api_GLEW()
 {
-  glewExperimental = GL_TRUE;
-  GLenum glewERR = glewInit();
-  if (glewERR != GLEW_OK)
-    Debug::log_error("[Application] ","glew error : ", glewGetErrorString(glewERR));
+  glewExperimental = GL_TRUE; // declared in glew.h
+  GLenum glew_error = glewInit();
+  if (glew_error != GLEW_OK)
+    Debug::log_error("[Application] ","glew error : ", glewGetErrorString(glew_error));
   Debug::log_from(Debug::application,"OpenGL function pointers loaded");
 }
 
+// enables the output of debug messages produced by a debug context. If it instead were left disabled, the debug message log would be silenced. Note that in a non-debug context, very few, if any messages might be produced, even when GL_DEBUG_OUTPUT is enabled. 
 void Application::config_opengl_debug_flags()
 {
   glEnable(GL_DEBUG_OUTPUT);
   Debug::submit_debug_callback();
+  Debug::log_from(Debug::application,"OpenGL debug output enabled");
 }
 
-// Get the number of extensions implemented by hardware, print them as a list
+// Print the OpenGL extensions implemented by this hardware as a list. This function is here if you want to check for yourself what your hardware implements at first glance. This function is protected so the best place to call it would be to derive from Application and call this function from the on_init() override.
 void Application::print_opengl_extensions()
 {
-  GLint n_extensions;
+  GLint n_extensions, i;
   glGetIntegerv(GL_NUM_EXTENSIONS, &n_extensions);
-  std::cout << "[Application] " << n_extensions << " OpenGL extensions found to be implemented by this hardware\n";
-  for (int i = 0; i < n_extensions; i++)
-    std::cout << "\t\t" << glGetStringi(GL_EXTENSIONS, i) << '\n';
+  Debug::log("[Application] ",n_extensions," OpenGL extensions found to be implemented by this hardware");
+  for (i = 0; i < n_extensions; i++)
+    Debug::log("\t\t",glGetStringi(GL_EXTENSIONS,i));
 }
 
 // load an MP3 file, and start playing it. Initializes support for MP3 if it wasnt already initialized.
 void Application::set_music(const char* MP3_file)
 {
   if (sdl.p_music != nullptr)
-  { // if music is currently loaded                     
-    Mix_FreeMusic(sdl.p_music); // turn it off
-    sdl.p_music = nullptr;      // nullify its pointer
+  {                  
+    Mix_FreeMusic(sdl.p_music);
+    sdl.p_music = nullptr;
   }
-  // load an MP3 file and set music pointer
   if (sdl.p_music = Mix_LoadMUS(MP3_file))
-    Mix_PlayMusic(sdl.p_music, -1); // start music
+    Mix_PlayMusic(sdl.p_music, -1);
   else
     Debug::log_error("[Application] ", Mix_GetError());
+  Debug::log_from(Debug::application, "mixer now playing ",MP3_file);
 }

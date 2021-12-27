@@ -4,7 +4,6 @@
 #include "camera.h"
 #include "scene.h"
 
-
 struct SDL_App_Data
 {
   SDL_Window *p_window;
@@ -30,7 +29,7 @@ public:
   
   void init(const char*, int, int, int, int, int);
   void step(float);
-  void update_fps_average(Uint32);
+  void update_fdt_average(Uint32);
   void clean();
   bool is_running();
   virtual void on_init();
