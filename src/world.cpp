@@ -2,42 +2,69 @@
 #include <iostream>
 #include "debug.h"
 
-static bool world_already_loaded = false;
 
-World_node* load_world(Map_ID_enum mID)
+World_node::World_node(Map_ID_enum map_ID) { mID= map_ID; };
+
+Map_ID_enum World_node::up()    { return neighbors[0]; }
+Map_ID_enum World_node::left()  { return neighbors[1]; }
+Map_ID_enum World_node::down()  { return neighbors[2]; }
+Map_ID_enum World_node::right() { return neighbors[3]; }
+
+void World_node::set_neighbors(Map_ID_enum up, Map_ID_enum left, Map_ID_enum down,Map_ID_enum right)
 {
-  static World_node* nbt_nbt; //= new World_node(new_bark_town);
-  static World_node* r29_nbt; //= new World_node(route_29_nbt);
-  static World_node* r29_cgc; //= new World_node(route_29_cgc);
-  static World_node* cgc_cgc; //= new World_node(cherry_grove_city);
+  // if this world node has neighbors then it is part of the overworld by design,
+  // non-overworld maps will only need to be rendered one at a time, so no need to reference neighbors
+  in_overworld = true;
+  neighbors[0] = up;
+  neighbors[1] = left;
+  neighbors[2] = down;
+  neighbors[3] = right;
+}
 
-  if (!world_already_loaded)
-  {
-    Debug::log_from(Debug::world,"first call to load world");
-    // construct the entire set of world nodes
-    nbt_nbt = new World_node(new_bark_town);
-    r29_nbt = new World_node(route_29_nbt);
-    r29_cgc = new World_node(route_29_cgc);
-    cgc_cgc = new World_node(cherry_grove_city);
+World_Graph::World_Graph()
+{
+  // construct full set of nodes
+  for (std::uint8_t i = 1U; i < max_map_id; ++i)
+    world_map[static_cast<Map_ID_enum>(i)] = new World_node(static_cast<Map_ID_enum>(i));
+  // build adjacency list for overworld maps
+  world_map[new_bark_town]->set_neighbors(null_map_id, route_29, null_map_id, route_27);
+  world_map[route_29]->set_neighbors(route_46, cherry_grove_city, null_map_id, new_bark_town);
+  world_map[cherry_grove_city]->set_neighbors(route_30, null_map_id, route_29, null_map_id);
+  world_map[route_30]->set_neighbors(route_31, null_map_id, cherry_grove_city, null_map_id);
+  world_map[route_31]->set_neighbors(null_map_id, violet_city, route_30, null_map_id);
+  world_map[violet_city]->set_neighbors(null_map_id, route_36, route_32, route_31);
+  world_map[route_32]->set_neighbors(violet_city, ruins_of_alph, null_map_id, null_map_id);
+  world_map[route_33]->set_neighbors(null_map_id, azalea_town, null_map_id, null_map_id);
+  world_map[azalea_town]->set_neighbors(null_map_id, null_map_id, null_map_id, route_33);
+  world_map[route_34]->set_neighbors(goldenrod_city, null_map_id, null_map_id, null_map_id);
+  world_map[route_35]->set_neighbors(null_map_id, null_map_id, goldenrod_city, route_36);
+  world_map[route_36]->set_neighbors(route_37, route_35, ruins_of_alph, violet_city);
+  world_map[route_37]->set_neighbors(ecruteak_city, null_map_id, route_36, null_map_id);
+  world_map[ecruteak_city]->set_neighbors(route_38, null_map_id, route_37, route_42);
+  world_map[route_38]->set_neighbors(null_map_id, farm, null_map_id, ecruteak_city);
+  world_map[farm]->set_neighbors(null_map_id, null_map_id, route_39, route_38);
+  world_map[route_39]->set_neighbors(farm,null_map_id,olivine_city,null_map_id);
+  world_map[olivine_city]->set_neighbors(route_39,route_40,null_map_id,null_map_id);
+  world_map[route_40]->set_neighbors(null_map_id,null_map_id,route_41,olivine_city);
+  world_map[route_41]->set_neighbors(route_40, cianwood_city, null_map_id, null_map_id);
+  world_map[route_42]->set_neighbors(null_map_id, ecruteak_city, null_map_id, mahogany_town);
+  world_map[mahogany_town]->set_neighbors(route_43, route_42, null_map_id, route_44);
+  world_map[route_43]->set_neighbors(lake_of_rage, null_map_id, mahogany_town, null_map_id);
+  world_map[lake_of_rage]->set_neighbors(null_map_id, null_map_id, route_43, null_map_id);
+  world_map[route_44]->set_neighbors(null_map_id, mahogany_town, null_map_id, null_map_id);
+  world_map[blackthorn_city]->set_neighbors(null_map_id, null_map_id, route_45, null_map_id);
+  world_map[route_45]->set_neighbors(blackthorn_city, null_map_id, route_46, null_map_id);
+  world_map[route_46]->set_neighbors(route_45, null_map_id, route_29, null_map_id);
+}
 
-    // connect the entire set of world nodes
-    nbt_nbt->left = r29_nbt;
-    r29_nbt->left = r29_cgc;
-    r29_cgc->left = cgc_cgc;
+World_Graph::~World_Graph()
+{
+  // untested
+  for (auto [key, node] : world_map)
+    delete node;
+}
 
-    cgc_cgc->right = r29_cgc;
-    r29_cgc->right = r29_nbt;
-    r29_nbt->right = nbt_nbt;
-    
-    // update the static flag that world data has been loaded
-    world_already_loaded = true;
-  }
-  // return handle
-  switch(mID)
-  {
-    case new_bark_town:     return nbt_nbt;
-    case route_29_nbt:      return r29_nbt;
-    case route_29_cgc:      return r29_cgc;
-    case cherry_grove_city: return cgc_cgc;
-  }
+World_node* World_Graph::get_node(Map_ID_enum mID)
+{
+  return world_map.find(mID) != world_map.end()? world_map[mID] : nullptr;
 }
