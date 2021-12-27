@@ -54,7 +54,7 @@ DEBUGBIN = debug
 all: $(APPBIN) $(DEBUGBIN)
 
 $(APPBIN): $(OBJS) $(MOBJ)
-	$(CC) $^ $(CPP_STANDARD) $(COMPILER_FLAGS) $(LIBRARY_PATHS) $(LINKER_FLAGS) -o $@
+	$(CC) $^ $(CPP_STANDARD) $(COMPILER_FLAGS) $(LIBRARY_PATHS) $(LINKER_FLAGS) -O3 -o $@
 
 # enable default debug info for GDB
 $(DEBUGBIN): $(OBJS) $(MOBJ)
