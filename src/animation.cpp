@@ -4,25 +4,17 @@
 
 namespace Animation
 {
-  using std::vector;
-  using std::unordered_map;
-  using std::cout;
   typedef std::pair<const char*, const char*> Transition;
 
 
-  State::State(const char *name)
-  {
-    this->name= name;
-  }
+  State::State(const char *name) { this->name= name; }
 
-  const char* State::get_name()
-  {
-    return name;
-  }
+  const char* State::get_name() { return name; }
 
   void State::add_transition(const char *event, State *transitionState)
   {
-    if (event_map.find(event) == event_map.end()) {
+    if (event_map.find(event) == event_map.end())
+    {
       Debug::log_from(Debug::animation,"transition from ",name," to ",transitionState->get_name()," on event ",event); 
       event_map[event]= transitionState;
     }
@@ -32,18 +24,17 @@ namespace Animation
 
   State* State::change(const char *event, Shader *shader)
   {
-    if (event_map.find(event) != event_map.end()) {
+    if (event_map.find(event) != event_map.end())
+    {
       glUseProgram(shader->handle);
-      shader->set("frameID", event_map[event]->frameID);
+      shader->set("frameID", event_map[event]->frame_ID);
       glUseProgram(0);
-      //cout << "Changing from "<< name <<"(fID = "<< frameID <<") to "<< event_map[event]->get_name() <<"(fID) = "<< event_map[event]->frameID <<"\n";
+      Debug::log_from(Debug::animation, "changing from ",name," to ",event_map[event]->get_name());
       return event_map[event];
     }
     return this;
   }
-
-
-
+  
   // class Sequence {
   //   int* fc;
   // public:
@@ -51,12 +42,7 @@ namespace Animation
   //   void operator()() {};
   // };
 
-
-
-  void Automaton::set_shader(Shader *s)
-  {
-    shader= s;
-  }
+  void Automaton::set_shader(Shader *s) { shader= s; }
 
   bool Automaton::operator==(const char *stateName)
   {
@@ -65,15 +51,16 @@ namespace Animation
 
   Automaton* Automaton::create_state(const char *s, int fID, vector<Transition> transitions)
   {
-    if (states.find(s) == states.end()) { // IF state with name s doesn't yet exist
-      states[s]= new State(s);              // Create one
-      if (current_state == nullptr)           // IF current state is uninitialized
-        current_state= states[s];               // Set it to the new state
+    if (states.find(s) == states.end())
+    {                                // if state with name s doesn't yet exist
+      states[s]= new State(s);          // create one
+      if (current_state == nullptr)     // if current state is uninitialized
+        current_state= states[s];          // set it to the new state
     }
-    states[s]->frameID= fID;              // Set states frameID
-    for (Transition t : transitions)      // FOR EACH event-transition pair
-      this->add_transition(s, t);             // Create transition event
-    return this;                          // Fluent
+    states[s]->frame_ID= fID;        // set states frameID
+    for (Transition t : transitions) // for each event-transition pair
+      this->add_transition(s, t);       // Create transition event
+    return this;                     // fluent
   }
 
   void Automaton::add_transition(const char *s, Transition t)

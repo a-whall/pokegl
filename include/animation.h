@@ -16,7 +16,7 @@ namespace Animation
     const char* name;
     unordered_map<const char*, State*> event_map;
   public:
-    int frameID; // must match the frame index in shader sampler_2D_array
+    int frame_ID; // must match the frame index in shader sampler_2D_array
 
     State(const char *);
     const char* get_name();
@@ -25,16 +25,12 @@ namespace Animation
     State* change(const char *, Shader*);
   };
 
-
-
   // class Sequence {
   //   int* fc;
   // public:
   //   Sequence(int* frameCounter) {}
   //   void operator()() {};
   // };
-
-
 
   class Automaton
   {
