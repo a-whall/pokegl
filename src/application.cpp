@@ -105,7 +105,7 @@ void Application::init_library_SDL()
     Debug::log_error("[Application] ", IMG_GetError());
   if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) // initialize SDL_Mixer API
     Debug::log_error("[Application] ", Mix_GetError());
-  if (!Mix_Init(MIX_INIT_MP3))                               // initialize audio support for MP3 files (does nothing but return true if already initialized)
+  if (!Mix_Init(MIX_INIT_MP3))                               // init file support for MP3. Note: no need to call Mix_Init for wav (simply returns true if already initialized)
     Debug::log_error("[Application] ", Mix_GetError());
   Debug::log_from(Debug::application,"SDL subsystems initialized");
 }
@@ -113,13 +113,11 @@ void Application::init_library_SDL()
 // Create a window with the exact same paremeters of Application::init. Initialize a pointer to SDL's keystates array which lets you know which keys are pressed (the array is updated by calling 'SDL_PumpEvents')
 void Application::init_window_and_keystates_SDL(const char* title, int x, int y, int w, int h, int fullscreen)
 {
-  using namespace Debug;
   sdl.p_window= SDL_CreateWindow(title, x, y, w, h, fullscreen);
-  sdl.p_key_states= SDL_GetKeyboardState(nullptr);
-  scene_manager.keystates= sdl.p_key_states;
-  log_from(Debug::application,"SDL window initialized");
+  scene_manager.key_states= sdl.p_key_states= SDL_GetKeyboardState(nullptr);
+  Debug::log_from(Debug::application,"SDL window initialized");
   scene_manager.init_camera(x,y);
-  log_from(Debug::application,"camera initialized");
+  Debug::log_from(Debug::application,"camera initialized");
 }
 
 // Create an OpenGL context, glsl = version 4.5, core profile => forward compatibility glsl

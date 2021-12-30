@@ -4,35 +4,40 @@
 
 namespace Animation
 {
-  typedef std::pair<const char*, const char*> Transition;
+  typedef Frame_ID_enum Transition;
 
+  FS::FS(Frame_ID_enum fID) { this->frame_ID= fID; }
 
-  State::State(const char *name) { this->name= name; }
+  void FS::set_name(const char* s) { this->name= s; }
+  const char* FS::get_name() { return name; }
 
-  const char* State::get_name() { return name; }
-
-  void State::add_transition(const char *event, State *transitionState)
+  void FS::add_transition(Frame_ID_enum event, FS * transitionState)
   {
     if (event_map.find(event) == event_map.end())
     {
       Debug::log_from(Debug::animation,"transition from ",name," to ",transitionState->get_name()," on event ",event); 
-      event_map[event]= transitionState;
+      this->event_map[event]= transitionState;
     }
     else
+    {
       Debug::log_from(Debug::animation,name," already has transition for event ",event);
+    }
   }
 
-  State* State::change(const char *event, Shader *shader)
+  FS* FS::change(Frame_ID_enum event, Shader *shader)
   {
+    FS * result;
     if (event_map.find(event) != event_map.end())
     {
       glUseProgram(shader->handle);
       shader->set("frameID", event_map[event]->frame_ID);
       glUseProgram(0);
       Debug::log_from(Debug::animation, "changing from ",name," to ",event_map[event]->get_name());
-      return event_map[event];
+      result = event_map[event];
     }
-    return this;
+    else
+      result = this;
+    return result;
   }
   
   // class Sequence {
@@ -42,37 +47,46 @@ namespace Animation
   //   void operator()() {};
   // };
 
-  void Automaton::set_shader(Shader *s) { shader= s; }
+  void FSM::set_shader(Shader *s) { shader= s; }
 
-  bool Automaton::operator==(const char *stateName)
+  bool FSM::operator==(Frame_ID_enum fID)
   {
-    return current_state->get_name() == stateName;
+    return current_state->frame_ID == fID;
   }
 
-  Automaton* Automaton::create_state(const char *s, int fID, vector<Transition> transitions)
+  Frame_ID_enum FSM::get_fid()
   {
-    if (states.find(s) == states.end())
-    {                                // if state with name s doesn't yet exist
-      states[s]= new State(s);          // create one
-      if (current_state == nullptr)     // if current state is uninitialized
-        current_state= states[s];          // set it to the new state
+    return current_state->frame_ID;
+  }
+
+  FSM& FSM::create_state(const char *s, Frame_ID_enum fID, vector<Transition> transitions)
+  {
+    if (states.find(fID) == states.end())
+    {                               // if state with frame id fID doesn't yet exist
+      states[fID]= new FS(fID);     // create one
+      if (current_state == nullptr)    // if fsa current state is uninitialized
+        current_state= states[fID];       // set it to the newly created state
     }
-    states[s]->frame_ID= fID;        // set states frameID
-    for (Transition t : transitions) // for each event-transition pair
-      this->add_transition(s, t);       // Create transition event
-    return this;                     // fluent
+    states[fID]->set_name(s);       // set states name
+    for (Transition t : transitions)// for each event-transition pair
+    {
+      //states[fID]->add_transition
+      this->add_transition(fID, t);    // Create transition event
+    }
+    return *this;                   // fluent
   }
 
-  void Automaton::add_transition(const char *s, Transition t)
+  void FSM::add_transition(Frame_ID_enum fID, Transition t)
   {
-    if (states.find(s) == states.end())                  // IF state with name s doesn't exist
-      states[s]= new State(s);                             // create it
-    if (states.find(t.second) == states.end())           // IF successor state doesn't exist
-      states[t.second]= new State(t.second);               // create it
-    states[s]->add_transition(t.first, states[t.second]);// INVOKE states add_transition
+    // t.first: event_input   ,    t.second: Frame_ID of
+    if (states.find(fID) == states.end())                  // if state with name s doesn't exist
+      states[fID]= new FS(fID);                            // create it
+    if (states.find(t) == states.end())             // if successor state doesn't exist
+      states[t]= new FS(t);                  // create it
+    states[fID]->add_transition(t, states[t]);// call (access unordered_map) state::add_transition
   }
 
-  void Automaton::input_event(const char *e)
+  void FSM::input(Frame_ID_enum e)
   {
     if (current_state != nullptr)                   // if current state is initialized
       current_state= current_state->change(e, shader); // attempt to change state (state decides whether it does or not)

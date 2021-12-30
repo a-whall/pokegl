@@ -1,34 +1,30 @@
 #pragma once
 #include "mapid.h"
 #include <unordered_map>
+#include <GL/glew.h>
 
-struct World_node
+struct World_Node
 {
-  Map_ID_enum mID;
+  const Map_ID_enum mID;
+  const GLubyte * p_collision;
   Map_ID_enum neighbors[4];
   bool in_overworld = false;
-
-  World_node(Map_ID_enum);
-
-  void set_neighbors(Map_ID_enum, Map_ID_enum, Map_ID_enum, Map_ID_enum);
-
+  World_Node(Map_ID_enum);
+  void set_neighbors(Map_ID up, Map_ID left, Map_ID down, Map_ID right);
   Map_ID_enum up();
   Map_ID_enum left();
   Map_ID_enum down();
   Map_ID_enum right();
-
 };
-
-World_node* load_world(Map_ID_enum);
 
 class World_Graph
 {
-  std::unordered_map< Map_ID_enum, World_node* > world_map;
-
+  World_Node * current_node;
+  std::unordered_map< Map_ID_enum, World_Node* > world_map;
 public:
-
   World_Graph();
   ~World_Graph();
-
-  World_node* get_node(Map_ID_enum);
+  void set_current_node(Map_ID_enum);
+  World_Node * get_current_node();
+  World_Node * get_node(Map_ID_enum);
 };

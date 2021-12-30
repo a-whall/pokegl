@@ -11,11 +11,8 @@ int main(int argc, char* argv[])
   {
     frame_begin= SDL_GetTicks();
     app->step(ms_per_frame); // The value passed to step must be constant because some graphic operations depend on it (e.g. distance a sprite moves per frame)
-    app->update_fps_average(dt);
+    app->update_fdt_average(dt);
     dt = SDL_GetTicks() - frame_begin;
-    //std::cout << dt << '\n';
-    // if (dt < ms_per_frame) SDL_Delay(ms_per_frame - dt);
-    // else std::cout << "fdt > fps\n";
   }
   app->clean();
 }

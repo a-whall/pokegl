@@ -1,16 +1,21 @@
 #include "world.h"
 #include <iostream>
 #include "debug.h"
+#include "collision.h"
 
+World_Node::World_Node(Map_ID_enum map_ID)
+: mID(map_ID)
+{
+  p_collision= Collision_Data::get_ptr(map_ID);
+  Debug::log_from(Debug::world,"created node ",to_str[map_ID]);
+};
 
-World_node::World_node(Map_ID_enum map_ID) { mID= map_ID; };
+Map_ID_enum World_Node::up()    { return neighbors[0]; }
+Map_ID_enum World_Node::left()  { return neighbors[1]; }
+Map_ID_enum World_Node::down()  { return neighbors[2]; }
+Map_ID_enum World_Node::right() { return neighbors[3]; }
 
-Map_ID_enum World_node::up()    { return neighbors[0]; }
-Map_ID_enum World_node::left()  { return neighbors[1]; }
-Map_ID_enum World_node::down()  { return neighbors[2]; }
-Map_ID_enum World_node::right() { return neighbors[3]; }
-
-void World_node::set_neighbors(Map_ID_enum up, Map_ID_enum left, Map_ID_enum down,Map_ID_enum right)
+void World_Node::set_neighbors(Map_ID_enum up, Map_ID_enum left, Map_ID_enum down,Map_ID_enum right)
 {
   // if this world node has neighbors then it is part of the overworld by design,
   // non-overworld maps will only need to be rendered one at a time, so no need to reference neighbors
@@ -23,9 +28,9 @@ void World_node::set_neighbors(Map_ID_enum up, Map_ID_enum left, Map_ID_enum dow
 
 World_Graph::World_Graph()
 {
-  // construct full set of nodes
+  // construct full set of nodes, a node for all static Map_ID values.
   for (std::uint8_t i = 1U; i < max_map_id; ++i)
-    world_map[static_cast<Map_ID_enum>(i)] = new World_node(static_cast<Map_ID_enum>(i));
+    world_map[static_cast<Map_ID_enum>(i)] = new World_Node(static_cast<Map_ID_enum>(i));
   // build adjacency list for overworld maps
   world_map[new_bark_town]->set_neighbors(null_map_id, route_29, null_map_id, route_27);
   world_map[route_29]->set_neighbors(route_46, cherry_grove_city, null_map_id, new_bark_town);
@@ -64,7 +69,18 @@ World_Graph::~World_Graph()
     delete node;
 }
 
-World_node* World_Graph::get_node(Map_ID_enum mID)
+void World_Graph::set_current_node(Map_ID_enum mID)
 {
-  return world_map.find(mID) != world_map.end()? world_map[mID] : nullptr;
+  if ( (this->current_node= this->get_node(mID)) == nullptr )
+    Debug::log_error_abort("[World] error: failed to set current node. get_node(",+mID,") returned nullptr");
+}
+
+World_Node* World_Graph::get_current_node()
+{
+  return current_node;
+}
+
+World_Node* World_Graph::get_node(Map_ID_enum mID)
+{
+  return world_map.find(mID) != world_map.end() ? world_map[mID] : nullptr;
 }

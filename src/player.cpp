@@ -3,26 +3,28 @@
 #include "gtc/matrix_transform.hpp"
 #include "camera.h"
 #include "frameid.h"
+#include "collision.h"
+#include "warps.h"
 
 // Player constructor : Initialize a bunch of player state values. Starts the player facing down.
 // @param cam: a reference to the scene camera
 // @param active_map: a pointer to a pointer which points to the active map (the central map tile of the scene)
 // @param s: a reference to shader for sprite animation
-Player::Player(Camera &cam, Map** active_map, Shader &s)
+Player::Player(Camera &cam, World_Graph* wnode, Shader &s)
 : Sprite(0.25f, 0.5f, .001f, cam, s),
-  player_animation_frame_state()
+  fsm()
 {
   frame_prevent_interupt_counter = stride_left = x_position = y_position = 0;
-  player_animation_frame_state.set_shader(&shader);                                 
+  fsm.set_shader(&shader);                                 
   init_buffers();
   init_animations();
   glUseProgram(shader.handle);
-  shader.set("frameID", e_down_idle);
+  shader.set("frameID", idle_d);
   glUseProgram(0);
-  pp_active_map= active_map;
+  p_world_graph= wnode;
 }
 
-// Player destructor : Delete all OpenGL objects associated with this player
+// Player destructor : Delete all OpenGL objects associated with this player sprite
 Player::~Player()
 {
   glDeleteBuffers(1, &vbo);
@@ -32,7 +34,7 @@ Player::~Player()
 }
 
 // Frames are loaded using IMG_Load() from the SDL_image library. This function creates an OpenGL texture2D_array texture object which is intended to be cleaned up by the player destructor.
-// @warning IMG_INIT_PNG flag must be passed to IMG_INIT, handled by application
+// @warning: the IMG_INIT_PNG flag must be passed to the SDL function IMG_INIT in order to load the png files used for these animation frames.
 void Player::init_animations()
 {
   constexpr int frame_width_pixels= 16,
@@ -45,15 +47,15 @@ void Player::init_animations()
 
   std::vector<const char*> frames =
   { // note: order matches Frame_ID enum
-    "assets/sprite/player/forward_idle.png",
     "assets/sprite/player/backward_idle.png",
     "assets/sprite/player/left_idle.png",
+    "assets/sprite/player/forward_idle.png",
     "assets/sprite/player/right_idle.png",
-    "assets/sprite/player/forward_stride1.png",
-    "assets/sprite/player/forward_stride2.png",
     "assets/sprite/player/backward_stride1.png",
     "assets/sprite/player/backward_stride2.png",
     "assets/sprite/player/left_stride.png",
+    "assets/sprite/player/forward_stride1.png",
+    "assets/sprite/player/forward_stride2.png",
     "assets/sprite/player/right_stride.png"
   };
 
@@ -77,20 +79,20 @@ void Player::init_animations()
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
-  player_animation_frame_state
-    .create_state( "D_IDLE",    e_down_idle,    {{"l","L_IDLE"},{"r","R_IDLE"},{"u","U_IDLE"},{"d1","D_STRIDE1"},{"d2","D_STRIDE2"}})
-    ->create_state("U_IDLE",    e_up_idle,      {{"l","L_IDLE"},{"r","R_IDLE"},{"d","D_IDLE"},{"u1","U_STRIDE1"},{"u2","U_STRIDE2"}})
-    ->create_state("L_IDLE",    e_left_idle,    {{"r","R_IDLE"},{"u","U_IDLE"},{"d","D_IDLE"},{"ls","L_STRIDE" }})
-    ->create_state("R_IDLE",    e_right_idle,   {{"l","L_IDLE"},{"u","U_IDLE"},{"d","D_IDLE"},{"rs","R_STRIDE" }})
-    ->create_state("L_STRIDE",  e_left_stride,  {{"l","L_IDLE"}})
-    ->create_state("R_STRIDE",  e_right_stride, {{"r","R_IDLE"}})
-    ->create_state("D_STRIDE1", e_down_stride1, {{"d","D_IDLE"}})
-    ->create_state("D_STRIDE2", e_down_stride2, {{"d","D_IDLE"}})
-    ->create_state("U_STRIDE1", e_up_stride1,   {{"u","U_IDLE"}})
-    ->create_state("U_STRIDE2", e_up_stride2,   {{"u","U_IDLE"}});
+  fsm
+    .create_state("player_idle_down"   , idle_d,    { idle_l,idle_r,idle_u,stride_d2,stride_d1 })
+    .create_state("player_idle_up"     , idle_u,    { idle_l,idle_r,idle_d,stride_u1,stride_u2 })
+    .create_state("player_idle_right"  , idle_r,    { idle_l,idle_u,idle_d,stride_r1 })
+    .create_state("player_idle_left"   , idle_l,    { idle_r,idle_u,idle_d,stride_l1 })
+    .create_state("player_stride_left" , stride_l1, { idle_l })
+    .create_state("player_stride_right", stride_r1, { idle_r })
+    .create_state("player_stride_down1", stride_d1, { idle_d })
+    .create_state("player_stride_down2", stride_d2, { idle_d })
+    .create_state("player_stride_up1"  , stride_u1, { idle_u })
+    .create_state("player_stride_up2"  , stride_u2, { idle_u });
 }
 
-// VBO and EBO data is created to exist temporarily on stack and, from this function, is sent to the GPU. VBO data represents model coordinates of the player texture, i.e. a 1x1 quad centered on origin, as well as texture coordinates for texture mapping which is handled by OpenGL. EBO data represents the order in which vertices in the VBO are to be drawn to make triangles by the OpenGL draw calls.
+// This function declares VBO and EBO data temporarily on stack and sends it to the GPU. VBO and EBO data will not change for the duration of the program. VBO data represents model coordinates of the player texture, i.e. a 1x1 quad centered on origin, as well as texture coordinates for texture mapping which is handled by OpenGL. EBO data represents the order in which vertices in the VBO are to be drawn to make triangles by the OpenGL draw calls.
 void Player::init_buffers()
 {
   float vbo_data[]=
@@ -121,8 +123,8 @@ void Player::init_buffers()
   glBindVertexArray(0);
 }
 
- // Updates the players model-view matrix using the camera's view matrix. Then checks whether to accept input or continue executing an animation phase.
- // @param t: the intended duration of frame of the application
+ // Indefinitely updates the players model-view matrix using the camera's view matrix. Then checks whether to continue executing an animation phase or to accept and process input.
+ // @param t: the intended duration of 1 frame of the application
  // @param key_states: a pointer to SDL pressed keys data
 void Player::update(float t, const Uint8* key_states)
 {
@@ -132,25 +134,81 @@ void Player::update(float t, const Uint8* key_states)
   else
   {
     take_input(key_states);
-    // // take_input(key_states);
-    // Point input_direction=
-    //   key_states[SDL_SCANCODE_W] ? Point{ 0, 1} :
-    //   key_states[SDL_SCANCODE_A] ? Point{-1, 0} :
-    //   key_states[SDL_SCANCODE_S] ? Point{ 0,-1} :
-    //   key_states[SDL_SCANCODE_D] ? Point{ 1, 0} :
-    //   Point{0,0};
-    
-    // Point destination= Point{
-    //   x_position + input_direction.x,
-    //   y_position + input_direction.y
-    // };
+    int x_max, y_max;
+    const GLubyte * p_collision;
+    World_Node * wnode= p_world_graph->get_current_node();
+    Map_ID_enum mID= wnode->mID;
+    Frame_ID_enum fID;
+    Point dest= {x_position,y_position};
 
-    // // if destination point is a warp point
+    auto can_move_to = [&](Point dest)
+    {
+      bool move_allowed=  (0 <= dest.x && dest.x < x_max && 0 <= dest.y && dest.y < y_max); // map bounds checking
+      int i= y_max * dest.x + dest.y; // index into collision bits array
+      if (move_allowed)
+        move_allowed= (p_collision[i/8] >> (7 - (i%8))) & 1; // access collision data
+      Debug::log_from(Debug::player,"move allowed to (",dest.x,",",dest.y,"): ",move_allowed);
+      return move_allowed;
+    };
 
-    // if ((*pp_active_map)->allows_move_to(destination.x, destination.y)) {
-    //   std::cout << "map allows move to : " << destination.x << ',' << destination.y << '\n';
-    //   return;
-    // }
+    if      (key_states[SDL_SCANCODE_W]) { ++dest.y; fID=idle_u; }
+    else if (key_states[SDL_SCANCODE_A]) { --dest.x; fID=idle_l; }
+    else if (key_states[SDL_SCANCODE_S]) { --dest.y; fID=idle_d; }
+    else if (key_states[SDL_SCANCODE_D]) { ++dest.x; fID=idle_r; }
+    else fID= fsm.get_fid();
+ 
+    if (dest.x == x_position && dest.y == y_position) // if no movement
+      return;                                            // no need to do anything further
+
+    fsm.input(fID); // may need a "turn_around" animation that takes a couple frames to delay input.
+
+    // Warp check: on destination.
+    const Warp::Warp_Point * warps = Warp::get_warp_table(mID);
+    for (int i = 0; i < Warp::num_warps[mID]; ++i)         // for each warp point
+    {
+      if (dest.x == warps[i].p.x && dest.y == warps[i].p.y) { // if the destination is equal to the current warp point
+        Debug::log_from(Debug::player,"warp point found");       // log a message that warp point has been identified
+        if (warps[i].dst.step_before) {                                  // should the player take one final step before the warp takes place?
+          start_animation();
+          pending_warp= &warps[i].dst;
+          Debug::log_from(Debug::player,"suspending warp");
+        }
+        else {
+          do_warp(warps[i].dst);
+          start_animation();
+        }
+      }
+    }
+
+    x_max = maps[0]->w_tiles;
+    y_max = maps[0]->h_tiles;
+
+    // in overworld logic: prepare to potentially check neighbor map
+    if (wnode->in_overworld) {
+      if (dest.y == -1) { 
+        mID = wnode->down();       // change the mID to determine which p_collision to retrieve
+        dest.y = maps[3]->h_tiles; // "underflow" destination coordinate
+        y_max = dest.y;            // set new boundary
+      }
+      else if (dest.x == -1) {
+        mID = wnode->left();
+        dest.x = maps[2]->w_tiles;
+        y_max = maps[2]->h_tiles;
+      }
+      else if (dest.y == y_max+1) {
+        mID = wnode->up();
+        dest.y = 0;
+        y_max = maps[1]->h_tiles;
+      }
+      else if (dest.x == x_max+1) {
+        mID = wnode->right();
+        dest.x = 0;
+        y_max = maps[4]->h_tiles;
+      }
+    }
+    p_collision = Collision_Data::get_ptr(mID);
+    if ( can_move_to(dest) && fsm == fID && frame_prevent_interupt_counter == 0)
+      this->start_animation();
   }
 }
 
@@ -177,133 +235,91 @@ void Player::set_position(int _x, int _y)
   cam.set_Position(vec3(x, y, 5.0f));
 }
 
-// Process key input based on keys pressed: move keys {w,a,s,d}
-void Player::take_input(const Uint8* key_states)
+void Player::set_position(const Warp::Destination& dest)
 {
+  this->set_position(dest.spawn_point.x, dest.spawn_point.y);
+}
 
-  //Point move_vector = get_input_direction();
-  //Point dest_point = { move_vector.x + x_position, move_vector.y + y_position };
+// Set the frame counter appropriately
+void Player::start_animation()
+{
+  frame_prevent_interupt_counter= 16;
+}
 
-  //if ((*pp_active_map)->allows_move_to(dest_point.x, dest_point.y))
-  // Might be possible to have a check in here that finds that the requested position may be off map.
-  if (key_states[SDL_SCANCODE_W])
-  {
-    // if the map allows a move up
-    if ((*pp_active_map)->allows_move_to(x_position, y_position + 1))
-      // if already facing up and there is no currently executing animation
-      if (player_animation_frame_state == "U_IDLE" && frame_prevent_interupt_counter == 0)
-        // prepare to start a new animation which takes 16 frames
-        frame_prevent_interupt_counter= 16;
+// This function is called preciesly when a warp should happen.
+void Player::do_warp(const Warp::Destination& dest)
+{
+  Debug::log_from(Debug::player,"performing warp");
+  fsm.input(dest.fID);                       // input the facing direction
+  maps[0]->change(dest.mID);                 // have the map change
+  p_world_graph->set_current_node(dest.mID); // change the active world node
+  this->set_position(dest);                  // update the player position
+}
 
-    // switch facing direction
-    player_animation_frame_state.input_event("u");
-  } 
-  else if (key_states[SDL_SCANCODE_A])
-  {
-    if ((*pp_active_map)->allows_move_to(x_position - 1, y_position))
-      if (player_animation_frame_state == "L_IDLE" && frame_prevent_interupt_counter == 0)
-        frame_prevent_interupt_counter= 16;
-    player_animation_frame_state.input_event("l");
-  }
-  else if (key_states[SDL_SCANCODE_S])
-  {
-    if ((*pp_active_map)->allows_move_to(x_position, y_position - 1))
-      if (player_animation_frame_state == "D_IDLE" && frame_prevent_interupt_counter == 0)
-        frame_prevent_interupt_counter= 16;
-    player_animation_frame_state.input_event("d");
-  }
-  else if (key_states[SDL_SCANCODE_D])
-  {
-    if ((*pp_active_map)->allows_move_to(x_position + 1, y_position)) 
-      if (player_animation_frame_state == "R_IDLE" && frame_prevent_interupt_counter == 0)
-        frame_prevent_interupt_counter= 16;
-    player_animation_frame_state.input_event("r");
-  }
-
-  if (key_states[SDL_SCANCODE_P])
-  {
-    std::cout << "[Player] position = " << x_position << ',' << y_position << '\n';
-  }
+// Use this function to process any extra key press logic for player
+void Player::take_input(const Uint8* key_states)
+{ 
+  if (key_states[SDL_SCANCODE_P]) std::cout << "[Player] position = " << x_position << ',' << y_position << '\n';
+  if (key_states[SDL_SCANCODE_0]) std::cout << "[Player] current frame state: " << fsm.get_fid() << '\n';
 }
 
 void Player::update_frame_to_stride()
 {
-  if (player_animation_frame_state == "L_IDLE")
-    player_animation_frame_state.input_event("ls");
-  else if (player_animation_frame_state == "R_IDLE")
-    player_animation_frame_state.input_event("rs");
-  else if (player_animation_frame_state == "D_IDLE")
-    player_animation_frame_state.input_event((stride_left = !stride_left) ? "d1" : "d2");
-  else if (player_animation_frame_state == "U_IDLE")
-    player_animation_frame_state.input_event((stride_left = !stride_left) ? "u1" : "u2");
+  if      (fsm == idle_l) fsm.input(stride_l1);
+  else if (fsm == idle_r) fsm.input(stride_r1);
+  else if (fsm == idle_d) fsm.input((stride_left = !stride_left) ? stride_d1 : stride_d2);
+  else if (fsm == idle_u) fsm.input((stride_left = !stride_left) ? stride_u1 : stride_u2);
+  else Debug::log_error("[Player] failed to update frame to stride");
 }
     
 void Player::update_frame_to_idle()
 {
-  if (player_animation_frame_state == "L_STRIDE")
-    player_animation_frame_state.input_event("l");
-  else if (player_animation_frame_state == "R_STRIDE")
-    player_animation_frame_state.input_event("r");
-  else if (player_animation_frame_state == "D_STRIDE1" || player_animation_frame_state == "D_STRIDE2")
-    player_animation_frame_state.input_event("d");
-  else if (player_animation_frame_state == "U_STRIDE1" || player_animation_frame_state == "U_STRIDE2")
-    player_animation_frame_state.input_event("u");
-}
-
-// Create a vector with the given offsets
-// Translate the model matrix of the player with the vector above
-// Apply that same translation to the games camera
-void Player::change_position(float dx, float dy)
-{
-  vec3 x_y_translation= vec3(dx, dy, 0.0f);
-  model = translate(model, x_y_translation);
-  cam.move(x_y_translation);
+  if      (fsm == stride_l1)                     fsm.input(idle_l);
+  else if (fsm == stride_r1)                     fsm.input(idle_r);
+  else if (fsm == stride_d1 || fsm == stride_d2) fsm.input(idle_d);
+  else if (fsm == stride_u1 || fsm == stride_u2) fsm.input(idle_u);
+  else Debug::log_error("[Player] failed to update frame to idle");
 }
 
 void Player::update_position()
 {
-  float delta_pos= 0.0625f;
-  if (player_animation_frame_state == "L_IDLE" || player_animation_frame_state == "L_STRIDE")
-    change_position(-delta_pos, 0.0f);
-  else if (player_animation_frame_state == "R_IDLE" || player_animation_frame_state == "R_STRIDE")
-    change_position(delta_pos, 0.0f);
-  else if (player_animation_frame_state == "U_IDLE" || player_animation_frame_state == "U_STRIDE1" || player_animation_frame_state == "U_STRIDE2")
-    change_position(0.0f, delta_pos);
-  else if (player_animation_frame_state == "D_IDLE" || player_animation_frame_state == "D_STRIDE1" || player_animation_frame_state == "D_STRIDE2")
-    change_position(0.0f, -delta_pos);
+  auto change_position = [&](float dx, float dy) {
+    vec3 x_y_translation= vec3(dx, dy, 0.0f);  // Create a vector with the given offsets
+    model = translate(model, x_y_translation); // Translate the model matrix of the player with the vector above
+    cam.move(x_y_translation);                 // Apply that same translation to the games camera
+  };
+  float delta_pos= 0.0625f; // 1/16th because 16 frames total in the walk animation --> the player will move exactly 1 unit total per step taken
+  if (fsm == idle_l || fsm == stride_l1) change_position(-delta_pos, 0.0f);
+  else if (fsm == idle_r || fsm == stride_r1) change_position(delta_pos, 0.0f);
+  else if (fsm == idle_u || fsm == stride_u1 || fsm == stride_u2) change_position(0.0f, delta_pos);
+  else if (fsm == idle_d || fsm == stride_d1 || fsm == stride_d2) change_position(0.0f, -delta_pos);
+  else Debug::log_error("[Player] failed to update position");
 }
 
-void Player::walk_anim_end_update_coordinates() {
-  if (player_animation_frame_state == "L_IDLE")
-    --x_position;
-  else if (player_animation_frame_state == "R_IDLE")
-    ++x_position;
-  else if (player_animation_frame_state == "D_IDLE")
-    --y_position;
-  else if (player_animation_frame_state == "U_IDLE")
-    ++y_position;
+void Player::walk_anim_end() 
+{
+  // update position
+  if      (fsm == idle_u) ++y_position;
+  else if (fsm == idle_l) --x_position;
+  else if (fsm == idle_d) --y_position;
+  else if (fsm == idle_r) ++x_position;
+  else Debug::log_error("[Player] error: failed to update coordinates, animation state may be incorrect");
+  // handle pending warps
+  if (pending_warp != nullptr) {
+    do_warp(*pending_warp);
+    if (pending_warp->step_after)
+      start_animation();
+    pending_warp = nullptr;
+  }
 }
 
-// Updates frames at specific frame counts over a 16 frame interval.
-// Frame counter decrements invariably, therefore this function shouldn't be called unless *frame_counter is greater than zero.
-// 4 frames are spent in idle pose, 8 frames in stride pose, then 4 frames are spent back in idle
-// so if you keep walking there is an equal frame interval.
-// Assumes 60 FPS.
+// Updates frames at specific frame counts over a 16 frame interval. Frame counter decrements invariably, therefore this function shouldn't be called unless *frame_counter is greater than zero. 4 frames are spent in idle pose, 8 frames in stride pose, then 4 frames are spent back in idle so if you keep walking there is an equal frame interval. Assumes 60 FPS.
 void Player::walk_animation(int *frame_counter)
 {
-  if (*frame_counter < 1)
-    Debug::log_error_abort("[Player] error: walk_animation frame_counter should be at least 1 and was not.");
-
-  if (*frame_counter == 4)
-    update_frame_to_idle();
-
-  else if(*frame_counter == 12)
-    update_frame_to_stride();
-
+  if     (*frame_counter < 1)   Debug::log_error_abort("[Player] error: walk_animation frame_counter should be at least 1 and was not");
+  if     (*frame_counter == 4)  update_frame_to_idle();
+  else if(*frame_counter == 12) update_frame_to_stride();
   update_position();
-
   (*frame_counter)--;
-
-  if (*frame_counter == 0)
-    walk_anim_end_update_coordinates();
+  if (*frame_counter == 0) walk_anim_end();
 }

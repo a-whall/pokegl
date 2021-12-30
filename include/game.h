@@ -14,9 +14,10 @@ namespace Game
   class Instance
   : public Application
   {
-    bool in_overworld;
+    World_Graph * world;
   public:
     Instance();
+    ~Instance();
     void on_init() override;
     void on_update(float t) override;
   };

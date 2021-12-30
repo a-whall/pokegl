@@ -8,7 +8,7 @@ namespace Debug
   using std::cerr;
   using std::endl;
 
-  enum Debug_Source_enum
+  enum Debug_Source_enum : uint16_t
   {
     animation   = 0x0001,
     application = 0x0002,
@@ -22,12 +22,16 @@ namespace Debug
     scene       = 0x0200,
     shader      = 0x0400,
     world       = 0x0800,
+    //open      = 0x1000,
+    //open      = 0x2000,
+    //open      = 0x4000,
+    //open      = 0x8000,
     all         = 0xffff
   };
 
-  // set to zero to turn off general program output, operator<OR> various source enums to "turn on" that output source 
+  // set to zero to turn off general program output, operator<OR> any source enum values to "turn on" that output source 
   // note: prior to compiling, you may need to 'make clean' for changes to affect the whole program correctly.
-  constexpr unsigned output_filter= compiler | shader | stats;
+  constexpr unsigned output_filter= all;//player | world | map | shader | stats;
 
   extern void GLAPIENTRY my_debug_callback(
     GLenum gl_debug_source,
@@ -64,10 +68,8 @@ namespace Debug
 
   template<typename ... Args>
   void log_from(Debug_Source_enum src_enum, Args&&... args)
-  { // TODO: check assembly-code to make sure the compiler actually removes log calls when output_filter is 0
-    // source_enum is gauranteed to have only one 1 bit, so when anded with the output filter,
-    // the result of the expression below will be non-zero iff the source is turned on at compile time.
-    if ( (src_enum & output_filter) != 0 )
+  {
+    if (src_enum & output_filter)
     {
       cout << str(src_enum);
       log(std::forward<Args>(args)...);
