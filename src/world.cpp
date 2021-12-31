@@ -65,8 +65,8 @@ World_Graph::World_Graph()
 World_Graph::~World_Graph()
 {
   // untested
-  for (auto [key, node] : world_map)
-    delete node;
+  for (auto& node : world_map)
+    delete node.second;
 }
 
 void World_Graph::set_current_node(Map_ID_enum mID)
