@@ -8,18 +8,18 @@ ifeq ($(shell uname), Linux)
 endif
 
 # must update these lists if you create a new file
-DEP_FILES = animation.h application.h camera.h collision.h debug.h extlibs.h frameid.h game.h map.h mapid.h player.h scene.h shader.h sprite.h warps.h world.h
-OBJ_FILES = animation.o application.o camera.o collision.o debug.o game.o map.o player.o scene.o shader.o sprite.o warps.o world.o
-MAIN_OBJ_FILE = main.o
+DEP_FILES := animation.h application.h camera.h collision.h debug.h extlibs.h frameid.h game.h map.h mapid.h player.h scene.h shader.h sprite.h warps.h world.h
+OBJ_FILES := animation.o application.o camera.o collision.o debug.o game.o map.o main.o player.o scene.o shader.o sprite.o warps.o world.o
+MAIN_OBJ_FILE := main.o
 
 # compiler and language version
-CC = g++
-CPP_STANDARD = -std=c++17
+CC := g++
+CPP_STANDARD := -std=c++17
 
 # project directories
-IDIR = ./include
-ODIR = ./obj
-SDIR = ./src
+IDIR := include
+ODIR := obj
+SDIR := src
 
 # adds folder names to file names to make a list with appropriate paths
 DEPS = $(patsubst %,$(IDIR)/%,$(DEP_FILES))
@@ -29,11 +29,11 @@ MOBJ = $(patsubst %,$(ODIR)/%,$(MAIN_OBJ_FILE))
 # required libraries: SDL, SDL_Image, SDL_Mixer, GLEW, OpenGL (GLM is header only)
 # linux lib binaries
 LIB = /usr/lib/x86_64-linux-gnu
-# windows libs (input your own paths)
-SDL2_LIB = C:\cpplibs\SDL2mingw\main\lib
-SDL_IMG_LIB = C:\cpplibs\SDL2mingw\image\lib
-SDL_MXR_LIB = C:\cpplibs\SDL2mingw\mixer\lib
-GFX_LIB = C:\cpplibs\Graphics# directory with GLEW32.lib, GLEW32s.lib, OpenGL32.lib
+# windows libs
+SDL2_LIB = C:/cpplibs/SDL2mingw/main/lib
+SDL_IMG_LIB = C:/cpplibs/SDL2mingw/image/lib
+SDL_MXR_LIB = C:/cpplibs/SDL2mingw/mixer/lib
+GFX_LIB = C:/cpplibs/Graphics# directory with GLEW32.lib, GLEW32s.lib, OpenGL32.lib
 
 COMPILER_FLAGS =-Wpedantic -Wall -Wextra
 
@@ -42,6 +42,7 @@ LINKER_FLAGS =-lSDL2 -lSDL2main -lSDL2_image -lSDL2_mixer
 ifeq ($(detected_os), linux)
     LIBRARY_PATHS =-L$(LIB)
     LINKER_FLAGS += -lGLEW -lOpenGL
+    # linux includes
     GLM_DIR = /usr/include/glm
     GLEW_DIR = /usr/include/glew
     SDL2_DIR = /usr/include/SDL2
@@ -51,7 +52,7 @@ endif
 ifeq ($(detected_os), windows)
     LIBRARY_PATHS =-L$(SDL2_LIB) -L$(SDL_IMG_LIB) -L$(SDL_MXR_LIB) -L$(GFX_LIB)
     LINKER_FLAGS += -lGLEW32 -lOpenGL32
-    # windows includes (input your own paths)
+    # windows includes
     GLM_DIR = C:/cpplibs/GLM 
     GLEW_DIR = C:/cpplibs/GLew/glew-2.1.0/include
     SDL2_DIR = C:/cpplibs/SDL2mingw/Main/include
@@ -78,7 +79,7 @@ clean:
 	rm -f $(ODIR)/*.o
 	rm poke
 
-$(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
+$(OBJS): $(ODIR)/%.o: $(SDIR)/%.cpp
 	$(CC) -c $(CPP_STANDARD) $< $(CFLAGS) $(INCLUDES) -o $@
 
 # Library links for windows
