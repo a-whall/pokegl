@@ -75,7 +75,9 @@ namespace Scene
 
   void Manager::refresh()
   {
-    using std::remove_if, std::begin, std::end;
+    using std::remove_if;
+    using std::begin;
+    using std::end;
     auto is_not_active = [](const Sprite* sprite) { return !sprite->is_active; };
 		sprites.erase( remove_if(begin(sprites),end(sprites),is_not_active), end(sprites) );
 	}
