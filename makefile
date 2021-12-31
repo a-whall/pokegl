@@ -1,5 +1,12 @@
 # a pokegl Makefile
 
+ifeq ($(OS), Windows_NT)
+    detected_os := windows
+endif
+ifeq ($(shell uname), Linux)
+    detected_os := linux
+endif
+
 # must update these lists if you create a new file
 DEP_FILES = animation.h application.h camera.h collision.h debug.h extlibs.h frameid.h game.h map.h mapid.h player.h scene.h shader.h sprite.h warps.h world.h
 OBJ_FILES = animation.o application.o camera.o collision.o debug.o game.o map.o player.o scene.o shader.o sprite.o warps.o world.o
@@ -19,34 +26,40 @@ DEPS = $(patsubst %,$(IDIR)/%,$(DEP_FILES))
 OBJS = $(patsubst %,$(ODIR)/%,$(OBJ_FILES))
 MOBJ = $(patsubst %,$(ODIR)/%,$(MAIN_OBJ_FILE))
 
-# library include directories (input your own if paths differ)
-GLM_DIR = /usr/include/glm
-GLEW_DIR = /usr/include/glew
-SDL2_DIR = /usr/include/SDL2
-SDL_IMG_DIR = /usr/include/SDL2_image
-SDL_MXR_DIR = /usr/include/SDL2_mixer
-
-INCLUDES =-I$(IDIR) -I$(GLM_DIR) -I$(GLEW_DIR) -I$(SDL2_DIR) -I$(SDL_IMG_DIR) -I$(SDL_MXR_DIR)
-
+# required libraries: SDL, SDL_Image, SDL_Mixer, GLEW, OpenGL (GLM is header only)
 # linux lib binaries
 LIB = /usr/lib/x86_64-linux-gnu
-
-# windows libs (input your own paths, then choose the right LIBRARY_PATHS symbol below labeled windows)
+# windows libs (input your own paths)
 SDL2_LIB = C:\cpplibs\SDL2mingw\main\lib
 SDL_IMG_LIB = C:\cpplibs\SDL2mingw\image\lib
 SDL_MXR_LIB = C:\cpplibs\SDL2mingw\mixer\lib
 GFX_LIB = C:\cpplibs\Graphics# directory with GLEW32.lib, GLEW32s.lib, OpenGL32.lib
 
-# libraries: SDL, SDL_Image, SDL_Mixer, GLEW32, OpenGL32
-# linux
-LIBRARY_PATHS =-L$(LIB)
-
-# windows
-# LIBRARY_PATHS =-L$(SDL2_LIB) -L$(SDL_IMG_LIB) -L$(SDL_MXR_LIB) -L$(GFX_LIB)
-
 COMPILER_FLAGS =-Wpedantic -Wall -Wextra
 
-LINKER_FLAGS =-lSDL2 -lSDL2main -lSDL2_image -lSDL2_mixer -lGLEW -lOpenGL
+LINKER_FLAGS =-lSDL2 -lSDL2main -lSDL2_image -lSDL2_mixer
+
+ifeq ($(detected_os), linux)
+    LIBRARY_PATHS =-L$(LIB)
+    LINKER_FLAGS += -lGLEW -lOpenGL
+    GLM_DIR = /usr/include/glm
+    GLEW_DIR = /usr/include/glew
+    SDL2_DIR = /usr/include/SDL2
+    SDL_IMG_DIR = /usr/include/SDL2_image
+    SDL_MXR_DIR = /usr/include/SDL2_mixer
+endif
+ifeq ($(detected_os), windows)
+    LIBRARY_PATHS =-L$(SDL2_LIB) -L$(SDL_IMG_LIB) -L$(SDL_MXR_LIB) -L$(GFX_LIB)
+    LINKER_FLAGS += -lGLEW32 -lOpenGL32
+    # windows includes (input your own paths)
+    GLM_DIR = C:/cpplibs/GLM 
+    GLEW_DIR = C:/cpplibs/GLew/glew-2.1.0/include
+    SDL2_DIR = C:/cpplibs/SDL2mingw/Main/include
+    SDL_IMG_DIR = C:/cpplibs/SDL2mingw/Image/include
+    SDL_MXR_DIR = C:/cpplibs/SDL2mingw/Mixer/include
+endif
+
+INCLUDES =-I$(IDIR) -I$(GLM_DIR) -I$(GLEW_DIR) -I$(SDL2_DIR) -I$(SDL_IMG_DIR) -I$(SDL_MXR_DIR)
 
 APPBIN = poke
 DEBUGBIN = debug
@@ -65,8 +78,8 @@ clean:
 	rm -f $(ODIR)/*.o
 	rm poke
 
-$(ODIR)/%.o: $(SDIR)/%.cpp $()
-	$(CC) -c $< $(CPP_STANDARD) $(CFLAGS) $(INCLUDES) -o $@
+$(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
+	$(CC) -c $(CPP_STANDARD) $< $(CFLAGS) $(INCLUDES) -o $@
 
 # Library links for windows
 # https://www.libsdl.org/release/SDL2-devel-2.0.14-mingw.tar.gz
