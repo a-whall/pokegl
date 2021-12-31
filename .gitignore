@@ -3,6 +3,10 @@
 
 # ignore the program executable
 poke
+*.exe
 
 # ignore the object directory
 /obj
+
+# ignore windows dll
+*.dll
