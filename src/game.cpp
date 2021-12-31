@@ -22,10 +22,10 @@ namespace Game
   void Instance::on_init()
   {
     // load sound effects
-    Mix_LoadWAV("assets/audio/sfx/go_inside.wav");
-    Mix_LoadWAV("assets/audio/sfx/go_outside.wav");
+    //Mix_LoadWAV("assets/audio/sfx/go_inside.wav");
+    //Mix_LoadWAV("assets/audio/sfx/go_outside.wav");
     // this function should probably load some state from a save file, but that can be implemented later
-    set_music("assets/audio/music/10 New Bark Town.mp3");
+    set_music("assets/audio/music/new_bark_town.mp3");
     map_shader= &scene_manager.new_shader("shader/MapSprite.glsl");
     player_shader= &scene_manager.new_shader("shader/PlayerSprite.glsl");
     scene_manager.world_graph = world;
