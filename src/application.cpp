@@ -62,7 +62,7 @@ void Application::update_fdt_average(Uint32 dt)
 
 void Application::clean()
 {
-  Debug::log_from(Debug::stats,"average fps: ", stats.cma_fdt); // may change this to print other program stats as well 
+  Debug::log_from(Debug::stats,"average frame time: ", stats.cma_fdt, " ms"); // may change this to print other program stats as well 
   scene_manager.clean();             // delete scene objects
   if (sdl.p_music != nullptr)        // if music is currently loaded
     Mix_FreeMusic(sdl.p_music);         // turn it off
@@ -163,14 +163,14 @@ void Application::print_opengl_extensions()
 // load an MP3 file, and start playing it. Initializes support for MP3 if it wasnt already initialized.
 void Application::set_music(const char* MP3_file)
 {
-  if (sdl.p_music != nullptr)
-  {                  
+  if (sdl.p_music != nullptr) {                  
     Mix_FreeMusic(sdl.p_music);
     sdl.p_music = nullptr;
   }
-  if (sdl.p_music = Mix_LoadMUS(MP3_file))
+  if (sdl.p_music = Mix_LoadMUS(MP3_file)) {
     Mix_PlayMusic(sdl.p_music, -1);
+    Debug::log_from(Debug::application, "mixer now playing ",MP3_file);
+  }
   else
     Debug::log_error("[Application] ", Mix_GetError());
-  Debug::log_from(Debug::application, "mixer now playing ",MP3_file);
 }
