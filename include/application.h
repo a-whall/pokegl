@@ -33,6 +33,7 @@ public:
   bool is_running();
   virtual void on_init();
   virtual void on_update(float);
+  virtual void on_exit();
 private:
   void prep_scene();
   void init_library_SDL();

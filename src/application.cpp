@@ -17,7 +17,7 @@ void Application::init(const char* title, int x, int y, int w, int h, int fullsc
   wrangle_modern_opengl_api_GLEW();
   config_opengl_debug_flags();
   prep_scene();
-  on_init();
+  this->on_init();
   this->running= true;
 }
 
@@ -42,7 +42,7 @@ void Application::step(float frame_time)
   {// update
     scene_manager.refresh();          // remove any scene objects that have had their 'inactive' flag set
     scene_manager.update(frame_time); // update all scene objects
-    on_update(frame_time);            // overridable for class user to implement
+    this->on_update(frame_time);            // overridable for class user to implement
   }
   {// render
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear frame-buffer data
@@ -62,6 +62,7 @@ void Application::update_fdt_average(Uint32 dt)
 
 void Application::clean()
 {
+  this->on_exit();
   Debug::log_from(Debug::stats,"average frame time: ", stats.cma_fdt, " ms"); // may change this to print other program stats as well 
   scene_manager.clean();             // delete scene objects
   if (sdl.p_music != nullptr)        // if music is currently loaded
@@ -79,10 +80,11 @@ bool Application::is_running()
 }
 
 /////////////////////////////////////////////////
-// These 2 functions are meant to be overridden /
+// These functions are meant to be overridden  //
 /////////////////////////////////////////////////
 void Application::on_init() {}                 //
 void Application::on_update(float t) {}        //
+void Application::on_exit() {}                 //
 /////////////////////////////////////////////////
 
 // enables some OpenGL rendering capabilities
