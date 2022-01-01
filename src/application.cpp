@@ -118,7 +118,6 @@ void Application::init_window_and_keystates_SDL(const char* title, int x, int y,
   Debug::log_from(Debug::application,"SDL window initialized");
   scene_manager.init_camera(x,y);
   Debug::log_from(Debug::application,"camera initialized");
-  scene_manager.sound = new Sound_Manager();
 }
 
 // Create an OpenGL context, glsl = version 4.5, core profile => forward compatibility glsl
