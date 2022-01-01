@@ -14,7 +14,7 @@ namespace Scene
   Player& Manager::new_player(Shader& s)
   {
     Camera& c = *this->camera_controller;
-    sprites.push_back(new Player(c, this->world_graph, s));
+    sprites.push_back(new Player(*this, s));
     sprites.back()->maps = this->maps;
     return *sprites.back();
   }

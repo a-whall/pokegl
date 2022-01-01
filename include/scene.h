@@ -6,6 +6,7 @@
 #include "map.h"
 #include "camera.h"
 #include "shader.h"
+#include "sound.h"
 
 namespace Scene
 {
@@ -17,6 +18,7 @@ namespace Scene
     vector<Shader*> shaders;
     Map * maps[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
   public:
+    Sound_Manager sound;
     World_Graph * world_graph= nullptr;
     Camera * camera_controller= nullptr;
     const Uint8 * key_states= nullptr;
