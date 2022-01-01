@@ -22,7 +22,7 @@ namespace Debug
     scene       = 0x0200,
     shader      = 0x0400,
     world       = 0x0800,
-    //open      = 0x1000,
+    sound       = 0x1000,
     //open      = 0x2000,
     //open      = 0x4000,
     //open      = 0x8000,
