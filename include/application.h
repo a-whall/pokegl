@@ -4,6 +4,11 @@
 #include "camera.h"
 #include "scene.h"
 
+struct App_Stats
+{
+  float cma_fdt= 0.0f; // cumulative-moving-average of frame-delta-time in milliseconds
+};
+
 struct SDL_App_Data
 {
   SDL_Window *p_window;
@@ -12,21 +17,15 @@ struct SDL_App_Data
   Mix_Music *p_music;
 };
 
-struct App_Stats
-{
-  float cma_fdt= 0.0f; // cumulative-moving-average of frame-delta-time in milliseconds
-};
-
 class Application
 {
 protected:
-  SDL_App_Data sdl;
   App_Stats stats;
+  SDL_App_Data sdl;
   Scene::Manager scene_manager;
-  bool running= false;
-
-public:
-  
+  bool running=false;
+  void print_opengl_extensions();
+public:  
   void init(const char*, int, int, int, int, int);
   void step(float);
   void update_fdt_average(Uint32);
@@ -34,18 +33,11 @@ public:
   bool is_running();
   virtual void on_init();
   virtual void on_update(float);
-
 private:
-
   void prep_scene();
   void init_library_SDL();
   void init_window_and_keystates_SDL(const char*, int, int, int, int, int);
   void config_opengl_context_SDL();
   void wrangle_modern_opengl_api_GLEW();
   void config_opengl_debug_flags();
-
-protected:
-
-  void print_opengl_extensions();
-  void set_music(const char* MP3_file);
 };

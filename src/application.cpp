@@ -118,6 +118,7 @@ void Application::init_window_and_keystates_SDL(const char* title, int x, int y,
   Debug::log_from(Debug::application,"SDL window initialized");
   scene_manager.init_camera(x,y);
   Debug::log_from(Debug::application,"camera initialized");
+  scene_manager.sound = new Sound_Manager();
 }
 
 // Create an OpenGL context, glsl = version 4.5, core profile => forward compatibility glsl
@@ -158,19 +159,4 @@ void Application::print_opengl_extensions()
   Debug::log("[Application] ",n_extensions," OpenGL extensions found to be implemented by this hardware");
   for (i = 0; i < n_extensions; i++)
     Debug::log("\t\t",glGetStringi(GL_EXTENSIONS,i));
-}
-
-// load an MP3 file, and start playing it. Initializes support for MP3 if it wasnt already initialized.
-void Application::set_music(const char* MP3_file)
-{
-  if (sdl.p_music != nullptr) {                  
-    Mix_FreeMusic(sdl.p_music);
-    sdl.p_music = nullptr;
-  }
-  if (sdl.p_music = Mix_LoadMUS(MP3_file)) {
-    Mix_PlayMusic(sdl.p_music, -1);
-    Debug::log_from(Debug::application, "mixer now playing ",MP3_file);
-  }
-  else
-    Debug::log_error("[Application] ", Mix_GetError());
 }
