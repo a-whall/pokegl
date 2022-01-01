@@ -16,9 +16,8 @@ namespace Game
   {
     World_Graph * world;
   public:
-    Instance();
-    ~Instance();
     void on_init() override;
     void on_update(float t) override;
+    void on_exit() override;
   };
 }
