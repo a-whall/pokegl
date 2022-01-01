@@ -1,6 +1,6 @@
 #include "player.h"
-#include "SDL_image.h" // IMG_Load
-#include "gtc/matrix_transform.hpp"
+#include <SDL_image.h> // IMG_Load
+#include <gtc/matrix_transform.hpp>
 #include "camera.h"
 #include "frameid.h"
 #include "collision.h"
@@ -38,12 +38,18 @@ Player::~Player()
 // @warning: the IMG_INIT_PNG flag must be passed to the SDL function IMG_INIT in order to load the png files used for these animation frames.
 void Player::init_animations()
 {
-  constexpr int frame_width_pixels= 16,
-                frame_height_pixels= frame_width_pixels,
-                layer_count= 10;
-  constexpr size_t frame_size_bytes= frame_width_pixels * frame_height_pixels * 4; // 8 bits-per-color-channel & RGBA => 4 bytes per pixel
-  SDL_Surface *loaded_image= nullptr;
-  GLubyte *p_pixel_data= new GLubyte[frame_size_bytes * layer_count];
+  typedef struct {
+    size_t
+      width_pixels=    16,
+      height_pixels=   width_pixels,
+      count=           10,
+      bytes_per_pixel= 4,
+      bytes_per_frame= width_pixels * height_pixels * bytes_per_pixel;
+  } Frame_Info;
+
+  SDL_Surface * loaded_image= nullptr;
+  constexpr Frame_Info f_info;
+  GLubyte * p_pixel_data= new GLubyte[f_info.bytes_per_frame * f_info.count];
   unsigned offset= 0;
 
   std::vector<const char*> frames =
@@ -64,17 +70,17 @@ void Player::init_animations()
   glGenTextures(1, &opengl_texture_ID);
   glBindTexture(GL_TEXTURE_2D_ARRAY, opengl_texture_ID);
 
-  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, frame_width_pixels, frame_height_pixels, layer_count); // allocate GPU memory
-  for (const char *file_path : frames)
+  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, f_info.width_pixels, f_info.height_pixels, f_info.count); // allocate GPU memory
+  for (const char * file_path : frames)
   { // Load each frame's pixel data from file into a GLubyte array
     loaded_image = IMG_Load(file_path);
     if (loaded_image == nullptr)
       Debug::log_error_abort("[Player] Player::init_animations failed to load a texture:", file_path);
-    memcpy(p_pixel_data + offset, loaded_image->pixels, frame_size_bytes);
+    memcpy(p_pixel_data + offset, loaded_image->pixels, f_info.bytes_per_frame);
     SDL_FreeSurface(loaded_image);
-    offset += frame_size_bytes;
+    offset += f_info.bytes_per_frame;
   }
-  glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, frame_width_pixels, frame_height_pixels, layer_count, GL_RGBA, GL_UNSIGNED_BYTE, p_pixel_data); // send pixel data to GPU memory
+  glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, f_info.width_pixels, f_info.height_pixels, f_info.count, GL_RGBA, GL_UNSIGNED_BYTE, p_pixel_data); // send pixel data to GPU memory
   delete p_pixel_data; // free pixel data from heap
 
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -173,6 +179,7 @@ void Player::update(float t, const Uint8* key_states)
           start_animation();
           pending_warp= &warps[i].dst;
           Debug::log_from(Debug::player,"suspending warp");
+          return;
         }
         else {
           do_warp(warps[i].dst);
