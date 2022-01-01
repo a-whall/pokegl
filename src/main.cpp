@@ -1,5 +1,5 @@
 #include "game.h"
-//#undef main // something to do with SDL having already defined main
+#undef main // fixes bug that prevents the program from running on windows. something to do with SDL having already defined main
 int main(int argc, char* argv[])
 {
   constexpr int window_width = 960, window_height = 640; // in pixels.   3:2 aspect ratio
@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
   while( app.is_running() )
   {
     frame_begin= SDL_GetTicks();
-    app.step(ms_per_frame); // The value passed to step must be constant because some graphic operations depend on it (e.g. distance a sprite moves per frame)
+    app.step(ms_per_frame); // The value passed to step must be constant because some graphic operations depend on it (e.g. speed at which a sprite moves per frame)
     app.update_fdt_average(dt = SDL_GetTicks() - frame_begin);
     if (dt < ms_per_frame)
       SDL_Delay(ms_per_frame - dt);
