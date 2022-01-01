@@ -31,7 +31,7 @@ namespace Debug
 
   // set to zero to turn off general program output, operator<OR> any source enum values to "turn on" that output source 
   // note: prior to compiling, you may need to 'make clean' for changes to affect the whole program correctly.
-  constexpr unsigned output_filter= all;//player | world | map | shader | stats;
+  constexpr unsigned output_filter= sound | stats;//player | world | map | shader | stats;
 
   extern void GLAPIENTRY my_debug_callback(
     GLenum gl_debug_source,
