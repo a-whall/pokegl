@@ -5,20 +5,24 @@
 #include "warps.h"
 #include "world.h"
 
+namespace Scene {
+  class Manager;
+}
+
 class Player
 : public Sprite
 {
   GLuint vao,  vbo,  ebo,  opengl_texture_ID;
   Animation::FSM fsm;
-  World_Graph * p_world_graph;
   int frame_prevent_interupt_counter;
   int stride_left;
   const Warp::Destination * pending_warp = nullptr;
+  Scene::Manager& scene_manager;
 public:
   Map * * maps;
   int x_position, y_position;
 
-  Player(Camera&, World_Graph*, Shader&);
+  Player(Scene::Manager& , Shader&);
   ~Player();
   void init_animations();
   void init_buffers() override;
@@ -32,7 +36,6 @@ private:
   void take_input(const Uint8 *);
   void update_frame_to_stride();
   void update_frame_to_idle();
-  //void change_position(float, float);
   void update_position();
   void walk_anim_end();
   void walk_animation(int *);

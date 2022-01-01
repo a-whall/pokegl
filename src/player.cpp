@@ -5,13 +5,15 @@
 #include "frameid.h"
 #include "collision.h"
 #include "warps.h"
+#include "scene.h"
 
 // Player constructor : Initialize a bunch of player state values. Starts the player facing down.
 // @param cam: a reference to the scene camera
 // @param active_map: a pointer to a pointer which points to the active map (the central map tile of the scene)
 // @param s: a reference to shader for sprite animation
-Player::Player(Camera &cam, World_Graph* wnode, Shader &s)
-: Sprite(0.25f, 0.5f, .001f, cam, s),
+Player::Player(Scene::Manager& man, Shader &s)
+: Sprite(0.25f, 0.5f, .001f, *man.camera_controller, s),
+  scene_manager(man),
   fsm()
 {
   frame_prevent_interupt_counter = stride_left = x_position = y_position = 0;
@@ -21,7 +23,6 @@ Player::Player(Camera &cam, World_Graph* wnode, Shader &s)
   glUseProgram(shader.handle);
   shader.set("frameID", idle_d);
   glUseProgram(0);
-  p_world_graph= wnode;
 }
 
 // Player destructor : Delete all OpenGL objects associated with this player sprite
@@ -136,7 +137,7 @@ void Player::update(float t, const Uint8* key_states)
     take_input(key_states);
     int x_max, y_max;
     const GLubyte * p_collision;
-    World_Node * wnode= p_world_graph->get_current_node();
+    World_Node * wnode= scene_manager.world_graph->get_current_node();
     Map_ID_enum mID= wnode->mID;
     Frame_ID_enum fID;
     Point dest= {x_position,y_position};
@@ -207,8 +208,16 @@ void Player::update(float t, const Uint8* key_states)
       }
     }
     p_collision = Collision_Data::get_ptr(mID);
-    if ( can_move_to(dest) && fsm == fID && frame_prevent_interupt_counter == 0)
-      this->start_animation();
+    bool can_move = can_move_to(dest);
+    if ( can_move ) {
+      if (fsm == fID && frame_prevent_interupt_counter == 0)
+        this->start_animation();
+    }
+    else {
+      // TODO: add a frame deley counter solution for this so that it does not spam when walking into something.
+      // TODO: fix bug where this sfx plays when walking into a warp that happens to be off map
+      scene_manager.sound.play_sfx(bump_wall);
+    }
   }
 }
 
@@ -252,7 +261,7 @@ void Player::do_warp(const Warp::Destination& dest)
   Debug::log_from(Debug::player,"performing warp");
   fsm.input(dest.fID);                       // input the facing direction
   maps[0]->change(dest.mID);                 // have the map change
-  p_world_graph->set_current_node(dest.mID); // change the active world node
+  scene_manager.world_graph->set_current_node(dest.mID); // change the active world node
   this->set_position(dest);                  // update the player position
 }
 
