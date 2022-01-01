@@ -8,7 +8,7 @@ ifeq ($(shell uname), Linux)
 endif
 
 # must update these lists if you create a new file
-DEP_FILES := animation.h application.h camera.h collision.h debug.h extlibs.h frameid.h game.h map.h mapid.h player.h scene.h shader.h sound.h sprite.h warps.h world.h
+DEP_FILES := animation.h application.h camera.h collision.h debug.h extlibs.h frameid.h game.h map.h mapid.h player.h scene.h sfxid.h shader.h sound.h sprite.h warps.h world.h
 OBJ_FILES := animation.o application.o camera.o collision.o debug.o game.o map.o main.o player.o scene.o shader.o sound.o sprite.o warps.o world.o
 MAIN_OBJ_FILE := main.o
 
@@ -65,14 +65,14 @@ INCLUDES =-I$(IDIR) -I$(GLM_DIR) -I$(GLEW_DIR) -I$(SDL2_DIR) -I$(SDL_IMG_DIR) -I
 APPBIN = poke
 DEBUGBIN = debug
 
-all: $(APPBIN) $(DEBUGBIN)
-
 $(APPBIN): $(OBJS) $(MOBJ)
 	$(CC) $^ $(CPP_STANDARD) $(COMPILER_FLAGS) $(LIBRARY_PATHS) $(LINKER_FLAGS) -O3 -o $@
 
 # enable default debug info for GDB
 $(DEBUGBIN): $(OBJS) $(MOBJ)
 	$(CC) -g $^ $(CPP_STANDARD) $(COMPILER_FLAGS) $(LIBRARY_PATHS) $(LINKER_FLAGS) -o $@
+
+all: $(APPBIN) $(DEBUGBIN)
 
 .PHONY: clean
 clean:
