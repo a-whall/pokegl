@@ -152,8 +152,10 @@ void Player::update(float t, const Uint8* key_states)
     {
       bool move_allowed=  (0 <= dest.x && dest.x < x_max && 0 <= dest.y && dest.y < y_max); // map bounds checking
       int i= y_max * dest.x + dest.y; // index into collision bits array
-      if (move_allowed)
+      if (move_allowed) {
+        std::cout << "collision bit accessed\n";
         move_allowed= (p_collision[i/8] >> (7 - (i%8))) & 1; // access collision data
+      }
       Debug::log_from(Debug::player,"move allowed to (",dest.x,",",dest.y,"): ",move_allowed);
       return move_allowed;
     };
@@ -194,31 +196,42 @@ void Player::update(float t, const Uint8* key_states)
     // in overworld logic: prepare to potentially check neighbor map
     if (wnode->in_overworld) {
       if (dest.y == -1) { 
-        mID = wnode->down();       // change the mID to determine which p_collision to retrieve
-        dest.y = maps[3]->h_tiles; // "underflow" destination coordinate
-        y_max = dest.y;            // set new boundary
+        mID = wnode->down();           // change the mID to determine which p_collision to retrieve
+        dest.y = maps[3]->h_tiles - 1; // "underflow" destination coordinate
+        y_max = maps[3]->h_tiles;      // set new boundary
+        x_max = maps[3]->w_tiles;
       }
       else if (dest.x == -1) {
         mID = wnode->left();
-        dest.x = maps[2]->w_tiles;
+        dest.x = maps[2]->w_tiles - 1;
         y_max = maps[2]->h_tiles;
+        x_max = maps[2]->w_tiles;
+        std::cout << "xmax,ymax : " << x_max << "," << y_max << '\n';
       }
-      else if (dest.y == y_max+1) {
+      else if (dest.y == y_max) {
         mID = wnode->up();
         dest.y = 0;
         y_max = maps[1]->h_tiles;
+        x_max = maps[1]->w_tiles;
       }
-      else if (dest.x == x_max+1) {
+      else if (dest.x == x_max) {
         mID = wnode->right();
         dest.x = 0;
         y_max = maps[4]->h_tiles;
+        x_max = maps[4]->w_tiles;
       }
     }
     p_collision = Collision_Data::get_ptr(mID);
+    Debug::log_from(Debug::player,"collision ptr for mID: ",+mID);
     bool can_move = can_move_to(dest);
     if ( can_move ) {
-      if (fsm == fID && frame_prevent_interupt_counter == 0)
+      if (fsm == fID && frame_prevent_interupt_counter == 0) {
         this->start_animation();
+        if (mID != wnode->mID) {
+          scene_manager.update_map(mID);
+          this->set_position(dest.x + 1, dest.y);
+        }
+      }
     }
     else {
       // TODO: add a frame deley counter solution for this so that it does not spam when walking into something.
@@ -266,17 +279,17 @@ void Player::start_animation()
 void Player::do_warp(const Warp::Destination& dest)
 {
   Debug::log_from(Debug::player,"performing warp");
-  fsm.input(dest.fID);                       // input the facing direction
-  maps[0]->change(dest.mID);                 // have the map change
-  scene_manager.world_graph->set_current_node(dest.mID); // change the active world node
+  fsm.input(dest.fID);                // input the facing direction
+  scene_manager.update_map(dest.mID); // sets current world node and changes maps array
   this->set_position(dest);                  // update the player position
 }
 
 // Use this function to process any extra key press logic for player
 void Player::take_input(const Uint8* key_states)
-{ 
+{
   if (key_states[SDL_SCANCODE_P]) std::cout << "[Player] position = " << x_position << ',' << y_position << '\n';
-  if (key_states[SDL_SCANCODE_0]) std::cout << "[Player] current frame state: " << fsm.get_fid() << '\n';
+  if (key_states[SDL_SCANCODE_F]) std::cout << "[Player] current frame state: " << fsm.get_fid() << '\n';
+  if (key_states[SDL_SCANCODE_0]) maps[0]->is_visible = !maps[0]->is_visible;
 }
 
 void Player::update_frame_to_stride()
