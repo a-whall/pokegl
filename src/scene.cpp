@@ -31,9 +31,53 @@ namespace Scene
     maps[3] = new Map(null_map_id, c, s); // down
     maps[4] = new Map(null_map_id, c, s); // right
     
-
-
     return *maps[0];
+  }
+
+  void Manager::update_map(Map_ID_enum mID)
+  {
+    World_Node * wnode;
+    Map_ID_enum m;
+    maps[0]->change(mID);
+    world_graph->set_current_node(mID);
+    World_Node * cnode = world_graph->get_current_node();
+
+    if (cnode->in_overworld) {
+      Debug::log_from(Debug::scene,"cnode in overworld");
+      if ((m=cnode->up()) != null_map_id) {
+        Debug::log_from(Debug::scene,"updating maps::up");
+        wnode = world_graph->get_node(m);
+        maps[1]->change(m);
+        maps[1]->shift_vertex_coords_by_offset(0,maps[0]->h_tiles);
+        maps[1]->is_visible= true;
+      }
+      if ((m=cnode->left()) != null_map_id) {
+        Debug::log_from(Debug::scene,"updating maps::left");
+        wnode = world_graph->get_node(m);
+        maps[2]->change(m);
+        maps[2]->shift_vertex_coords_by_offset(-maps[2]->w_tiles,0);
+      }
+      if ((m=cnode->down()) != null_map_id) {
+        Debug::log_from(Debug::scene,"updating maps::down");
+        wnode = world_graph->get_node(m);
+        maps[3]->change(m);
+        maps[3]->shift_vertex_coords_by_offset(0,-maps[3]->h_tiles);
+      }
+      if ((m=cnode->right()) != null_map_id) {
+        Debug::log_from(Debug::scene,"updating maps::right");
+        wnode = world_graph->get_node(m);
+        maps[4]->change(m);
+        maps[4]->shift_vertex_coords_by_offset(maps[0]->w_tiles,0);
+      }
+    //overworld_chunks.p_left_map = &scene_manager.new_map(route_29, *map_shader);
+    //overworld_chunks.p_left_map->shift_vertex_coords_by_offset(-overworld_chunks.p_left_map->w_tiles, 0);
+    //overworld_chunks.p_left_map->is_visible= false;
+    }
+    else {// set neighbors invisible
+      Debug::log_from(Debug::scene,"cnode is not in overworld");
+      maps[1]->is_visible = maps[2]->is_visible = maps[3]->is_visible
+      = maps[4]->is_visible = false;
+    }
   }
 
   Shader& Manager::new_shader(const char* file_name)

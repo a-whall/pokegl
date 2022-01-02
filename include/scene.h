@@ -26,6 +26,7 @@ namespace Scene
     Player& new_player(Shader& s);
     Shader& new_shader(const char *);
 	  Map&    init_map(Shader& s);
+    void update_map(Map_ID_enum);
     void update(float t);
     void render();
     void clean();
