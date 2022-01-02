@@ -7,7 +7,7 @@ namespace Collision_Data
 {
   const GLubyte * get_ptr(Map_ID_enum mID)
   {
-    Debug::log_from(Debug::collision,"loading mapID ",+mID);
+    Debug::log_from(Debug::collision,"fetching collision ptr for map id ",+mID, " ", to_str[mID]);
     switch (mID)
     {
       case null_map_id:       return nullptr;
@@ -18,7 +18,8 @@ namespace Collision_Data
       case elms_house:        return elms_house_collision_data;
       case new_bark_house_1:  return new_bark_house_1_collision_data;
       case route_29:          return route_29_collision_data;
-      //case cherry_grove_city: return cherry_grove_city_collision_data;
+      case cherry_grove_city: return cherry_grove_city_collision_data;
+      case route_30:          return route_30_collision_data;
       default:
         Debug::log_error("[Collsion] ","error: unhandled map enum; recieved map id ",+mID);
         return nullptr;
