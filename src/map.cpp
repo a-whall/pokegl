@@ -11,7 +11,7 @@
 
 const char* get_asset_path(Map_ID_enum mID)
 {
-  Debug::log_from(Debug::map, "getting asset path (mID:", +mID,')');
+  Debug::log_from(Debug::map, "getting asset path (mID:",+mID,' ',to_str[mID],')');
   switch(mID)
   {
     case new_bark_town:     return "assets/map/new_bark_town.png";
@@ -20,8 +20,9 @@ const char* get_asset_path(Map_ID_enum mID)
     case elms_lab:          return "assets/map/elms_lab.png";
     case elms_house:        return "assets/map/elms_house.png";
     case new_bark_house_1:  return "assets/map/nbt_house1.png";
-    case route_29:          return "assets/map/route_29_nbt.png";
+    case route_29:          return "assets/map/route_29.png";
     case cherry_grove_city: return "assets/map/cherry_grove_city.png";
+    case route_30:          return "assets/map/route_30.png";
     default:                return "file due to get_asset_path error"; // makes sense for call to SDL_GetError()
   }
 }
@@ -67,6 +68,10 @@ void Map::load_texture(const char* mapTexPath)
 void Map::init_texture()
 {
   glGenTextures(1, &current_gltexID);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D, current_gltexID);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 }
 
 void Map::init_buffers()
@@ -109,20 +114,20 @@ void Map::update(float t, const Uint8* keystates)
 
 void Map::render()
 {
-  if (this->is_visible) {
-    glUseProgram(shader.handle);
-    shader.set("MVP", cam.get_ViewToProjection_Matrix() * mv);
-    glActiveTexture(GL_TEXTURE0);           
-    glBindTexture(GL_TEXTURE_2D, current_gltexID);
-    glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0);
-    glBindVertexArray(0);
-    glUseProgram(0);
+  if (is_visible) {
+  glUseProgram(shader.handle);
+  shader.set("MVP", cam.get_ViewToProjection_Matrix() * mv);
+  glActiveTexture(GL_TEXTURE0);           
+  glBindTexture(GL_TEXTURE_2D, current_gltexID);
+  glBindVertexArray(vao);
+  glDrawElements(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0);
+  glBindVertexArray(0);
+  glUseProgram(0);
   }
 }
 
 void Map::shift_vertex_coords_by_offset(float x, float y)
-{
+{ // shifts an identity matrix by the given offsets, so previous shifts will be overwritten
   float hw = (float)(w >> 5); // half width ( x/16 /2)
   float hh = (float)(h >> 5); // half height
   model= glm::translate(glm::mat4(1.0f), glm::vec3(hw + x - 0.25f, hh + y - 0.0625f, 0.0f));
