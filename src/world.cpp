@@ -32,10 +32,10 @@ World_Graph::World_Graph()
   for (std::uint8_t i = 1U; i < max_map_id; ++i)
     world_map[static_cast<Map_ID_enum>(i)] = new World_Node(static_cast<Map_ID_enum>(i));
   // build adjacency list for overworld maps
-  world_map[new_bark_town]->set_neighbors(null_map_id, route_29, null_map_id, route_27);
-  world_map[route_29]->set_neighbors(route_46, cherry_grove_city, null_map_id, new_bark_town);
-  world_map[cherry_grove_city]->set_neighbors(route_30, null_map_id, route_29, null_map_id);
-  world_map[route_30]->set_neighbors(route_31, null_map_id, cherry_grove_city, null_map_id);
+  world_map[new_bark_town]->set_neighbors(null_map_id, route_29, null_map_id, null_map_id); // TODO: fix neighbors. set to nullmid for testing
+  world_map[route_29]->set_neighbors(null_map_id, cherry_grove_city, null_map_id, new_bark_town); // TODO: fix neighbors. set to nullmid for testing
+  world_map[cherry_grove_city]->set_neighbors(route_30, null_map_id, null_map_id, route_29); // TODO: fix neighbors. set to nullmid for testing
+  world_map[route_30]->set_neighbors(null_map_id/*route_31*/, null_map_id, cherry_grove_city, null_map_id); // TODO: same as above
   world_map[route_31]->set_neighbors(null_map_id, violet_city, route_30, null_map_id);
   world_map[violet_city]->set_neighbors(null_map_id, route_36, route_32, route_31);
   world_map[route_32]->set_neighbors(violet_city, ruins_of_alph, null_map_id, null_map_id);
