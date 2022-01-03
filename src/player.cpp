@@ -153,7 +153,6 @@ void Player::update(float t, const Uint8* key_states)
       bool move_allowed=  (0 <= dest.x && dest.x < x_max && 0 <= dest.y && dest.y < y_max); // map bounds checking
       int i= y_max * dest.x + dest.y; // index into collision bits array
       if (move_allowed) {
-        std::cout << "collision bit accessed\n";
         move_allowed= (p_collision[i/8] >> (7 - (i%8))) & 1; // access collision data
       }
       Debug::log_from(Debug::player,"move allowed to (",dest.x,",",dest.y,"): ",move_allowed);
@@ -171,52 +170,48 @@ void Player::update(float t, const Uint8* key_states)
 
     fsm.input(fID); // may need a "turn_around" animation that takes a couple frames to delay input.
 
-    // Warp check: on destination.
     const Warp::Warp_Point * warps = Warp::get_warp_table(mID);
     for (int i = 0; i < Warp::num_warps[mID]; ++i)         // for each warp point
     {
       if (dest.x == warps[i].p.x && dest.y == warps[i].p.y) { // if the destination is equal to the current warp point
         Debug::log_from(Debug::player,"warp point found");       // log a message that warp point has been identified
-        if (warps[i].dst.step_before) {                                  // should the player take one final step before the warp takes place?
-          start_animation();
-          pending_warp= &warps[i].dst;
-          Debug::log_from(Debug::player,"suspending warp");
-          return;
-        }
-        else {
+        if ( !suspend_warp(warps[i].dst) ) {                        // should the player take one final step before the warp takes place?
           do_warp(warps[i].dst);
-          start_animation();
         }
+        return;
       }
     }
 
     x_max = maps[0]->w_tiles;
     y_max = maps[0]->h_tiles;
 
-    // in overworld logic: prepare to potentially check neighbor map
-    if (wnode->in_overworld) {
-      if (dest.y == -1) { 
-        mID = wnode->down();           // change the mID to determine which p_collision to retrieve
-        dest.y = maps[3]->h_tiles - 1; // "underflow" destination coordinate
-        y_max = maps[3]->h_tiles;      // set new boundary
-        x_max = maps[3]->w_tiles;
+    Point spawn = dest; // this is of use when the player is trying to move to a neighbor map
+    if (wnode->in_overworld) { // in overworld logic: prepare to potentially check neighbor map
+      if (dest.y == y_max) {
+        mID = wnode->up();           // change the mID to determine which p_collision to retrieve
+        dest.y = 0;                  // "overflow" destination coordinate
+        spawn.y = -1;                // update the location the player will need to be placed for the impending map update
+        y_max = maps[1]->h_tiles;    // set new boundaries so that collision detection uses proper bounds
+        x_max = maps[1]->w_tiles;
       }
       else if (dest.x == -1) {
         mID = wnode->left();
         dest.x = maps[2]->w_tiles - 1;
+        spawn.x = maps[2]->w_tiles;
         y_max = maps[2]->h_tiles;
         x_max = maps[2]->w_tiles;
-        std::cout << "xmax,ymax : " << x_max << "," << y_max << '\n';
       }
-      else if (dest.y == y_max) {
-        mID = wnode->up();
-        dest.y = 0;
-        y_max = maps[1]->h_tiles;
-        x_max = maps[1]->w_tiles;
+      else if (dest.y == -1) {
+        mID = wnode->down();
+        dest.y = maps[3]->h_tiles - 1;
+        spawn.y = maps[3]->h_tiles;
+        y_max = maps[3]->h_tiles;
+        x_max = maps[3]->w_tiles;
       }
       else if (dest.x == x_max) {
         mID = wnode->right();
         dest.x = 0;
+        spawn.x = -1;
         y_max = maps[4]->h_tiles;
         x_max = maps[4]->w_tiles;
       }
@@ -229,13 +224,12 @@ void Player::update(float t, const Uint8* key_states)
         this->start_animation();
         if (mID != wnode->mID) {
           scene_manager.update_map(mID);
-          this->set_position(dest.x + 1, dest.y);
+          this->set_position(spawn.x, spawn.y);
         }
       }
     }
     else {
       // TODO: add a frame deley counter solution for this so that it does not spam when walking into something.
-      // TODO: fix bug where this sfx plays when walking into a warp that happens to be off map
       scene_manager.sound.play_sfx(bump_wall);
     }
   }
@@ -275,13 +269,25 @@ void Player::start_animation()
   frame_prevent_interupt_counter= 16;
 }
 
+bool Player::suspend_warp(const Warp::Destination& dest)
+{
+  if (dest.step_before) {
+    start_animation();
+    pending_warp= &dest;
+    return true;
+  }
+  return false;
+}
+
 // This function is called preciesly when a warp should happen.
 void Player::do_warp(const Warp::Destination& dest)
 {
   Debug::log_from(Debug::player,"performing warp");
   fsm.input(dest.fID);                // input the facing direction
   scene_manager.update_map(dest.mID); // sets current world node and changes maps array
-  this->set_position(dest);                  // update the player position
+  this->set_position(dest);           // update the player position
+  if (dest.step_after)
+    start_animation();
 }
 
 // Use this function to process any extra key press logic for player
