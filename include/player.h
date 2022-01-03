@@ -33,6 +33,7 @@ public:
   void start_animation();
 private:
   void do_warp(const Warp::Destination&);
+  bool suspend_warp(const Warp::Destination&);
   void take_input(const Uint8 *);
   void update_frame_to_stride();
   void update_frame_to_idle();
