@@ -10,11 +10,6 @@ World_Node::World_Node(Map_ID_enum map_ID)
   Debug::log_from(Debug::world,"created node ",to_str[map_ID]);
 };
 
-Map_ID_enum World_Node::up()    { return neighbors[0]; }
-Map_ID_enum World_Node::left()  { return neighbors[1]; }
-Map_ID_enum World_Node::down()  { return neighbors[2]; }
-Map_ID_enum World_Node::right() { return neighbors[3]; }
-
 void World_Node::set_neighbors(Map_ID_enum up, Map_ID_enum left, Map_ID_enum down,Map_ID_enum right)
 {
   // if this world node has neighbors then it is part of the overworld by design,
@@ -25,6 +20,11 @@ void World_Node::set_neighbors(Map_ID_enum up, Map_ID_enum left, Map_ID_enum dow
   neighbors[2] = down;
   neighbors[3] = right;
 }
+
+Map_ID_enum World_Node::up()    { return neighbors[0]; }
+Map_ID_enum World_Node::left()  { return neighbors[1]; }
+Map_ID_enum World_Node::down()  { return neighbors[2]; }
+Map_ID_enum World_Node::right() { return neighbors[3]; }
 
 World_Graph::World_Graph()
 {
@@ -69,10 +69,11 @@ World_Graph::~World_Graph()
     delete node.second;
 }
 
-void World_Graph::set_current_node(Map_ID_enum mID)
+World_Node * World_Graph::set_current_node(Map_ID_enum mID)
 {
   if ( (this->current_node= this->get_node(mID)) == nullptr )
     Debug::log_error_abort("[World] error: failed to set current node. get_node(",+mID,") returned nullptr");
+  return this->current_node;
 }
 
 World_Node* World_Graph::get_current_node()

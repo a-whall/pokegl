@@ -24,7 +24,7 @@ class World_Graph
 public:
   World_Graph();
   ~World_Graph();
-  void set_current_node(Map_ID_enum);
+  World_Node * set_current_node(Map_ID_enum);
   World_Node * get_current_node();
   World_Node * get_node(Map_ID_enum);
 };
