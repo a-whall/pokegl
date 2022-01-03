@@ -36,47 +36,57 @@ namespace Scene
 
   void Manager::update_map(Map_ID_enum mID)
   {
-    World_Node * wnode;
-    Map_ID_enum m;
-    maps[0]->change(mID);
-    world_graph->set_current_node(mID);
-    World_Node * cnode = world_graph->get_current_node();
-
+    // This is a helper function that exchanges the map pointers to 3 of the 5 total map objects. This way, for example, when walking left onto a new map zone the maps which are already loaded on the gpu can be reused.
+    // Note: I was writing this and trying to get it to work and these random translations by (0,0) worked mysteriously. I was just testing, I'm not sure why the same translation for all maps ...just works...
+    auto cascade_maps = [&](size_t i1, size_t i2) {
+      Map * tmp = maps[i1];
+      maps[i1] = maps[0];
+      maps[i1]->translate(0,0);
+      maps[0] = maps[i2];
+      maps[0]->translate(0,0);
+      maps[i2] = tmp;
+      maps[i2]->change(mID);
+      maps[i2]->translate(0,0);
+    };
+    World_Node * wnode = world_graph->get_current_node();
+    if      (wnode->up() == mID) cascade_maps(3,1);
+    else if (wnode->left() == mID) cascade_maps(4,2);
+    else if (wnode->down() == mID) cascade_maps(1,3);
+    else if (wnode->right() == mID) cascade_maps(2,4);
+    else maps[0]->change(mID); // this will naturally happen for non-overworld maps.
+    World_Node * cnode = world_graph->set_current_node(mID);
+    Map_ID_enum m; // temp value for the ifs below
     if (cnode->in_overworld) {
       Debug::log_from(Debug::scene,"cnode in overworld");
       if ((m=cnode->up()) != null_map_id) {
-        Debug::log_from(Debug::scene,"updating maps::up");
-        wnode = world_graph->get_node(m);
         maps[1]->change(m);
-        maps[1]->shift_vertex_coords_by_offset(0,maps[0]->h_tiles);
+        maps[1]->translate(0,maps[0]->h_tiles);
         maps[1]->is_visible= true;
       }
+      else maps[1]->is_visible= false;
       if ((m=cnode->left()) != null_map_id) {
-        Debug::log_from(Debug::scene,"updating maps::left");
-        wnode = world_graph->get_node(m);
         maps[2]->change(m);
-        maps[2]->shift_vertex_coords_by_offset(-maps[2]->w_tiles,0);
+        maps[2]->translate(-maps[2]->w_tiles,0);
+        maps[2]->is_visible= true;
       }
+      else maps[2]->is_visible= false;
       if ((m=cnode->down()) != null_map_id) {
-        Debug::log_from(Debug::scene,"updating maps::down");
-        wnode = world_graph->get_node(m);
         maps[3]->change(m);
-        maps[3]->shift_vertex_coords_by_offset(0,-maps[3]->h_tiles);
+        maps[3]->translate(0,-maps[3]->h_tiles);
+        maps[3]->is_visible= true;
       }
+      else maps[3]->is_visible= false;
       if ((m=cnode->right()) != null_map_id) {
-        Debug::log_from(Debug::scene,"updating maps::right");
-        wnode = world_graph->get_node(m);
         maps[4]->change(m);
-        maps[4]->shift_vertex_coords_by_offset(maps[0]->w_tiles,0);
+        maps[4]->translate(maps[0]->w_tiles,0);
+        maps[4]->is_visible= true;
       }
-    //overworld_chunks.p_left_map = &scene_manager.new_map(route_29, *map_shader);
-    //overworld_chunks.p_left_map->shift_vertex_coords_by_offset(-overworld_chunks.p_left_map->w_tiles, 0);
-    //overworld_chunks.p_left_map->is_visible= false;
+      else maps[4]->is_visible= false;
     }
     else {// set neighbors invisible
       Debug::log_from(Debug::scene,"cnode is not in overworld");
-      maps[1]->is_visible = maps[2]->is_visible = maps[3]->is_visible
-      = maps[4]->is_visible = false;
+      maps[0]->change(mID);
+      maps[1]->is_visible= maps[2]->is_visible= maps[3]->is_visible= maps[4]->is_visible= false;
     }
   }
 
