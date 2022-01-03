@@ -126,7 +126,7 @@ void Map::render()
   }
 }
 
-void Map::shift_vertex_coords_by_offset(float x, float y)
+void Map::translate(float x, float y)
 { // shifts an identity matrix by the given offsets, so previous shifts will be overwritten
   float hw = (float)(w >> 5); // half width ( x/16 /2)
   float hh = (float)(h >> 5); // half height

@@ -26,7 +26,7 @@ public:
   void init_buffers() override;
   void update(float t, const Uint8* keystates) override;
   void render() override;
-  void shift_vertex_coords_by_offset(float, float);
+  void translate(float, float);
   bool allows_move_to(int x, int y);
   void change(Map_ID_enum mID);
 };
