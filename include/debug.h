@@ -6,7 +6,6 @@ namespace Debug
 {
   using std::cout;
   using std::cerr;
-  using std::endl;
 
   enum Debug_Source_enum : uint16_t
   {
@@ -23,15 +22,15 @@ namespace Debug
     shader      = 0x0400,
     world       = 0x0800,
     sound       = 0x1000,
-    //open      = 0x2000,
+    warp        = 0x2000,
     //open      = 0x4000,
     //open      = 0x8000,
     all         = 0xffff
   };
 
   // set to zero to turn off general program output, operator<OR> any source enum values to "turn on" that output source 
-  // note: prior to compiling, you may need to 'make clean' for changes to affect the whole program correctly.
-  constexpr unsigned output_filter= player | scene | map | sound | stats;//player | world | map | shader | stats;
+  // note: prior to compiling, you should make clean for changes to affect the whole program correctly.
+  constexpr unsigned output_filter= all;//player | scene | map | sound | stats;
 
   extern void GLAPIENTRY my_debug_callback(
     GLenum gl_debug_source,
@@ -45,7 +44,7 @@ namespace Debug
 
   void submit_debug_callback();
 
-  const char* str(Debug_Source_enum src_enum);
+  const char* str(Debug_Source_enum);
 
   template<typename ... Args>
   void log(Args&&... args)
@@ -54,10 +53,19 @@ namespace Debug
   }
 
   template<typename ... Args>
-  void log_error_abort(Args&&... args)
+  void log_error_abort(Debug_Source_enum src_id, Args&&... args)
   {
-    (cerr << ... << args) << '\n'; // fold expr (C++17): Binary left fold (I op ... op A) becomes: ((((I op a1) op a2) op ...) op aN)
+    cerr << str(src_id) << "fatal error: ";
+    (cerr << ... << args) << '\n'; // fold expr (C++17): Binary left fold
+    cout << "[ Exit ] " << EXIT_FAILURE << '\n';
     exit(EXIT_FAILURE);
+  }
+
+  template<typename ... Args>
+  void log_error_from(Debug_Source_enum src_id, Args&&... args)
+  {
+    cout << str(src_id) << "error: ";
+    (cerr << ... << args) << '\n';
   }
 
   template<typename ... Args>

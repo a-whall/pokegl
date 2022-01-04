@@ -6,11 +6,15 @@
 World_Node::World_Node(Map_ID_enum map_ID)
 : mID(map_ID)
 {
-  p_collision= Collision_Data::get_ptr(map_ID);
-  Debug::log_from(Debug::world,"created node ",to_str[map_ID]);
+  Debug::log_from(Debug::world,"initializing: ",std::hex,this,std::dec," (node) ",to_str[this->mID]);
 };
 
-void World_Node::set_neighbors(Map_ID_enum up, Map_ID_enum left, Map_ID_enum down,Map_ID_enum right)
+World_Node::~World_Node()
+{
+  Debug::log_from(Debug::world,"deleting: ",std::hex,this,std::dec," (node) ",to_str[this->mID]);
+}
+
+void World_Node::set_neighbors(Map_ID_enum up, Map_ID_enum left, Map_ID_enum down, Map_ID_enum right)
 {
   // if this world node has neighbors then it is part of the overworld by design,
   // non-overworld maps will only need to be rendered one at a time, so no need to reference neighbors
@@ -28,6 +32,7 @@ Map_ID_enum World_Node::right() { return neighbors[3]; }
 
 World_Graph::World_Graph()
 {
+  Debug::log_from(Debug::world,"initializing: ",std::hex,this,std::dec," (graph)");
   // construct full set of nodes, a node for all static Map_ID values.
   for (std::uint8_t i = 1U; i < max_map_id; ++i)
     world_map[static_cast<Map_ID_enum>(i)] = new World_Node(static_cast<Map_ID_enum>(i));
@@ -64,15 +69,15 @@ World_Graph::World_Graph()
 
 World_Graph::~World_Graph()
 {
-  // untested
   for (auto& node : world_map)
     delete node.second;
+  Debug::log_from(Debug::world,"deleting: ",std::hex,this,std::dec," (graph)");
 }
 
 World_Node * World_Graph::set_current_node(Map_ID_enum mID)
 {
   if ( (this->current_node= this->get_node(mID)) == nullptr )
-    Debug::log_error_abort("[World] error: failed to set current node. get_node(",+mID,") returned nullptr");
+    Debug::log_error_abort(Debug::world,"failed to set current node. get_node(",to_str[mID],") returned nullptr");
   return this->current_node;
 }
 

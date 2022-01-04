@@ -11,12 +11,10 @@ namespace Animation
 
   typedef Frame_ID_enum Transition;
 
-  /**
-   * @brief FS stands for Frame State. Collections of these objects will form a Frame State Machine. Each Frame should be uniquely identified by a Frame_ID_enum. The primary purpose of this class is to act as an input acceptor as it stores all of its successors in a hash table accessed by their unique frame ID.
-   */
+  // FS stands for Frame State. Collections of these objects will form a Frame State Machine. Each Frame should be uniquely identified by a Frame_ID_enum. The primary purpose of this class is to act as an input acceptor as it stores all of its successors in a hash table accessed by their unique frame ID.
   class FS
   {
-    const char* name= "";
+    const char* name="nameless_fstate";
     unordered_map<Frame_ID_enum, FS*> event_map;
   public:
     Frame_ID_enum frame_ID; // must match the frame index in shader sampler_2D_array
@@ -34,9 +32,7 @@ namespace Animation
   //   void operator()() {};
   // };
 
-  /**
-   * @brief FSM stands for Frame State Machine which is based on a Finite State Machine. Thus Animation::FSM exists so that classes that extend <<Sprite>> have a data structure to model their frame states. States themselves are containers for successor states they may have, FSM is more like the interface to create states as well as encapsulating a current state and allowing to pass input to that state.
-   */
+  // FSM stands for Frame State Machine which is based on a Finite State Machine. Thus Animation::FSM exists so that classes that extend <<Sprite>> have a data structure to model their frame states. States themselves are containers for successor states they may have, FSM is more like the interface to create states as well as encapsulating a current state and allowing to pass input to that current state.
   class FSM
   {
     FS *current_state= nullptr;

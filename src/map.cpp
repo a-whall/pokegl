@@ -68,8 +68,9 @@ void Map::try_to_load_texture()
     return;
   }
   SDL_Surface * loaded_image= IMG_Load(get_asset_path(current_mID));
-  if(loaded_image == nullptr)
-    Debug::log_error_abort("[Map] load_texture error: ",SDL_GetError());
+  if(loaded_image == nullptr) {
+    Debug::log_error_abort(Debug::map,"texture-load failed ",SDL_GetError());
+  }
   this->w_tiles= (this->w= loaded_image->w) / 16;
   this->h_tiles= (this->h= loaded_image->h) / 16;
   Debug::log_from(Debug::map,"w,h: ", w_tiles,',',h_tiles);

@@ -15,7 +15,7 @@ namespace Warp
       case new_bark_house_1:  return new_bark_house_1_warp_data;
       case route_29:          return nullptr;
       case cherry_grove_city: return player_house_fl1_warp_data;
-      default: Debug::log_error_abort("[Warp] error: unhandled map id");
+      default: Debug::log_error_abort(Debug::warp,"unhandled map id");
     }
      return nullptr;
   }

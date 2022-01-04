@@ -4,8 +4,6 @@
 
 class World_Node;
 
-const char* get_asset_path(Map_ID_enum mID);
-
 class Map
 : public Sprite
 {

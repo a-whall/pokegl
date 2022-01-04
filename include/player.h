@@ -14,7 +14,7 @@ class Player
 {
   GLuint vao,  vbo,  ebo,  opengl_texture_ID;
   Animation::FSM fsm;
-  int frame_prevent_interupt_counter;
+  int frame_prevent_interupt_counter, info_button_delay_counter;
   int stride_left;
   const Warp::Destination * pending_warp = nullptr;
   Scene::Manager& scene_manager;

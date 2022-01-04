@@ -22,7 +22,7 @@ namespace Collision_Data
       case cherry_grove_city: return cherry_grove_city_collision_data;
       case route_30:          return route_30_collision_data;
       default:
-        Debug::log_error("[Collsion] error: no case of get ptr for ",to_str[mID]);
+        Debug::log_error_from(Debug::collision,"no case of get ptr for ",to_str[mID]);
         return nullptr;
     }
   }
@@ -39,7 +39,7 @@ namespace Collision_Data
   Point get_bounds(Map_ID_enum mID)
   {
     if (bounds.find(mID) == bounds.end())
-      Debug::log_error_abort("[Collision] fatal error: boundaries for ",to_str[mID]," undefined");
+      Debug::log_error_abort(Debug::collision,"boundaries for ",to_str[mID]," undefined");
     return bounds[mID]; 
   }
 

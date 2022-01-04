@@ -16,4 +16,5 @@ int main(int argc, char* argv[])
       SDL_Delay(ms_per_frame - dt);
   }
   app.clean();
+  std::cout << "[ Exit ] " << EXIT_SUCCESS << '\n';
 }

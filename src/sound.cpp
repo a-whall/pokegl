@@ -7,13 +7,13 @@ void Sound_Manager::load_sfx()
   {
     Mix_Chunk * mc = Mix_LoadWAV("assets/audio/sfx/bump_wall.wav");
     if (mc != NULL) sfx_map[bump_wall] = mc;
-    else std::cout << "[Sound] error: " << Mix_GetError() << '\n';
+    else Debug::log_error_from(Debug::sound,Mix_GetError());
   }
 }
 
 void Sound_Manager::play_song(Map_ID_enum mID)
 {
-  if (loaded_song != nullptr) {                  
+  if (loaded_song != nullptr) {
     Mix_FreeMusic(loaded_song);
     loaded_song = nullptr;
   }
@@ -22,7 +22,7 @@ void Sound_Manager::play_song(Map_ID_enum mID)
     Debug::log_from(Debug::sound,"mixer now playing ",get_audio_path(mID));
   }
   else
-    Debug::log_error("[Sound] ",Mix_GetError());
+    Debug::log_error_from(Debug::sound,Mix_GetError());
 }
 
 void Sound_Manager::play_sfx(SFX_ID_enum sID)

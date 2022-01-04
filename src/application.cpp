@@ -42,7 +42,7 @@ void Application::step(float frame_time)
   {// update
     scene_manager.refresh();          // remove any scene objects that have had their 'inactive' flag set
     scene_manager.update(frame_time); // update all scene objects
-    this->on_update(frame_time);            // overridable for class user to implement
+    this->on_update(frame_time);      // overridable for class user to implement
   }
   {// render
     glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT); // clear frame-buffer data
@@ -62,11 +62,11 @@ void Application::update_fdt_average(Uint32 dt)
 
 void Application::clean()
 {
-  this->on_exit();
-  Debug::log_from(Debug::stats,"average frame time: ", stats.cma_fdt, " ms"); // may change this to print other program stats as well 
+  this->on_exit();                   // call user-overridden exit function
   scene_manager.clean();             // delete scene objects
-  if (sdl.p_music != nullptr)        // if music is currently loaded
-    Mix_FreeMusic(sdl.p_music);         // turn it off
+//   if (sdl.p_music != nullptr)        // if music is currently loaded
+//     Mix_FreeMusic(sdl.p_music);         // turn it off
+  Debug::log_from(Debug::stats,"average frame time: ", stats.cma_fdt, " ms"); // may change this to print other program stats as well 
   Mix_CloseAudio();                  // shut down and cleanup SDL_Mixer API
   SDL_GL_DeleteContext(sdl.context); // destroy OpenGL instance
   SDL_DestroyWindow(sdl.p_window);   // close app window
@@ -102,13 +102,13 @@ void Application::prep_scene()
 void Application::init_library_SDL()
 {
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) < 0)         // initialize SDL, as well as flagged, subsystems
-    Debug::log_error_abort("[Application] ", SDL_GetError());
+    Debug::log_error_abort(Debug::application,SDL_GetError());
   if (IMG_Init(IMG_INIT_PNG) == 0)                           // load image-format support indicated by flag(s)
-    Debug::log_error("[Application] ", IMG_GetError());
+    Debug::log_error_from(Debug::application,IMG_GetError());
   if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) // initialize SDL_Mixer API
-    Debug::log_error("[Application] ", Mix_GetError());
+    Debug::log_error_from(Debug::application, Mix_GetError());
   if (!Mix_Init(MIX_INIT_MP3))                               // init file support for MP3. Note: no need to call Mix_Init for wav (simply returns true if already initialized)
-    Debug::log_error("[Application] ", Mix_GetError());
+    Debug::log_error_from(Debug::application, Mix_GetError());
   Debug::log_from(Debug::application,"SDL subsystems initialized");
 }
 
@@ -140,7 +140,7 @@ void Application::wrangle_modern_opengl_api_GLEW()
   glewExperimental = GL_TRUE; // declared in glew.h
   GLenum glew_error = glewInit();
   if (glew_error != GLEW_OK)
-    Debug::log_error("[Application] ","glew error : ", glewGetErrorString(glew_error));
+    Debug::log_error_from(Debug::application,"GLEW failed to initialize: ", glewGetErrorString(glew_error));
   Debug::log_from(Debug::application,"OpenGL function pointers loaded");
 }
 

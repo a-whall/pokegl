@@ -13,13 +13,11 @@ namespace Animation
 
   void FS::add_transition(Frame_ID_enum event, FS * transitionState)
   {
-    if (event_map.find(event) == event_map.end())
-    {
-      Debug::log_from(Debug::animation,"transition from ",name," to ",transitionState->get_name()," on event ",event); 
+    if (event_map.find(event) == event_map.end()) {
+      Debug::log_from(Debug::animation,name," -> ",transitionState->get_name()," on ",event); 
       this->event_map[event]= transitionState;
     }
-    else
-    {
+    else {
       Debug::log_from(Debug::animation,name," already has transition for event ",event);
     }
   }
@@ -32,7 +30,7 @@ namespace Animation
       glUseProgram(shader->handle);
       shader->set("frameID", event_map[event]->frame_ID);
       glUseProgram(0);
-      Debug::log_from(Debug::animation, "changing from ",name," to ",event_map[event]->get_name());
+      Debug::log_from(Debug::animation,name," -> ",event_map[event]->get_name());
       result = event_map[event];
     }
     else

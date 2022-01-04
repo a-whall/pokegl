@@ -23,7 +23,7 @@ namespace Scene
   {
     World_Node * active_wnode = world_graph->get_current_node();
     if (active_wnode == nullptr)
-      Debug::log_error_abort("[Scene] manager expected the world_graph to have a current world node");
+      Debug::log_error_abort(Debug::scene,"manager expected the world_graph to have a current world node");
     Camera& c = *this->camera_controller;
     maps[0] = new Map(active_wnode->mID, c, s);
     maps[1] = new Map(null_map_id, c, s); // up
@@ -42,43 +42,54 @@ namespace Scene
       Map * tmp = maps[i1];
       maps[i1] = maps[0];
       maps[i1]->translate(0,0);
+      maps[i1]->is_visible=true;
       maps[0] = maps[i2];
       maps[0]->translate(0,0);
+      maps[0]->is_visible=true;
       maps[i2] = tmp;
       maps[i2]->change(mID);
       maps[i2]->translate(0,0);
+      maps[i2]->is_visible=true;
     };
     World_Node * wnode = world_graph->get_current_node();
     if      (wnode->up() == mID) cascade_maps(3,1);
     else if (wnode->left() == mID) cascade_maps(4,2);
     else if (wnode->down() == mID) cascade_maps(1,3);
     else if (wnode->right() == mID) cascade_maps(2,4);
-    else maps[0]->change(mID); // this will naturally happen for non-overworld maps.
+    maps[0]->change(mID); // this will naturally happen for non-overworld maps.
     World_Node * cnode = world_graph->set_current_node(mID);
     Map_ID_enum m; // temp value for the ifs below
     if (cnode->in_overworld) {
       Debug::log_from(Debug::scene,"cnode in overworld");
-      if ((m=cnode->up()) != null_map_id) {
-        maps[1]->change(m);
-        maps[1]->translate(0,maps[0]->h_tiles);
-        maps[1]->is_visible= true;
+      if ((m=cnode->up()) != null_map_id) {    // if the new up map has null id according to world graph:
+        if (maps[1]->current_mID != m)            // if the up map hasn't already been swapped by cascade_maps:
+          maps[1]->change(m);                        // load the map
+        maps[1]->translate(0,maps[0]->h_tiles);   // translate the map sprite appropriately
+        maps[1]->update(0,nullptr);               // update the map object so that the correct matrix is used for rendering
+        maps[1]->is_visible= true;                // set the map to be visible
       }
-      else maps[1]->is_visible= false;
-      if ((m=cnode->left()) != null_map_id) {
-        maps[2]->change(m);
+      else maps[1]->is_visible= false;         // else turn the up maps visibility off
+      if ((m=cnode->left()) != null_map_id) {  // repeat
+        if (maps[2]->current_mID != m)
+          maps[2]->change(m);
         maps[2]->translate(-maps[2]->w_tiles,0);
+        maps[2]->update(0, nullptr);
         maps[2]->is_visible= true;
       }
       else maps[2]->is_visible= false;
       if ((m=cnode->down()) != null_map_id) {
-        maps[3]->change(m);
+        if (maps[3]->current_mID != m)
+          maps[3]->change(m);
         maps[3]->translate(0,-maps[3]->h_tiles);
+        maps[3]->update(0,nullptr);
         maps[3]->is_visible= true;
       }
       else maps[3]->is_visible= false;
       if ((m=cnode->right()) != null_map_id) {
-        maps[4]->change(m);
+        if (maps[4]->current_mID != m)
+          maps[4]->change(m);
         maps[4]->translate(maps[0]->w_tiles,0);
+        maps[4]->update(0,nullptr);
         maps[4]->is_visible= true;
       }
       else maps[4]->is_visible= false;
