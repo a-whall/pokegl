@@ -7,7 +7,13 @@
 
 namespace Collision_Data
 {
-  const GLubyte * get_ptr(Map_ID_enum mID);
+  extern std::unordered_map< Map_ID_enum, Point > bounds;
+
+  const GLubyte * get_ptr(Map_ID_enum);
+
+  void init();
+  void try_to_def_bounds(Map_ID_enum, int, int);
+  bool allows_move_to(Point, Map_ID_enum);
 
   constexpr GLubyte new_bark_town_collision_data[72]=
   {
