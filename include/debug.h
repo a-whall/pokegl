@@ -36,7 +36,7 @@ namespace Debug
     GLenum gl_debug_source,
     GLenum gl_debug_type,
     GLuint gl_error_id,
-		GLenum gl_debug_severity,
+    GLenum gl_debug_severity,
     GLsizei length,
     const GLchar *msg,
     const void *param

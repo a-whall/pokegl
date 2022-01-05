@@ -31,7 +31,7 @@ void Application::step(float frame_time)
       if (event.type == SDL_QUIT)
         running= false;
       // press escape to exit
-	    if (event.type == SDL_KEYUP
+      if (event.type == SDL_KEYUP
       && event.key.keysym.sym == SDLK_ESCAPE)
         running= false;
       // scroll in the z axis for 2D zoom
@@ -64,9 +64,7 @@ void Application::clean()
 {
   this->on_exit();                   // call user-overridden exit function
   scene_manager.clean();             // delete scene objects
-//   if (sdl.p_music != nullptr)        // if music is currently loaded
-//     Mix_FreeMusic(sdl.p_music);         // turn it off
-  Debug::log_from(Debug::stats,"average frame time: ", stats.cma_fdt, " ms"); // may change this to print other program stats as well 
+  Debug::log_from(Debug::stats,"average frame time: ",stats.cma_fdt," ms"); // may change this to print other program stats as well 
   Mix_CloseAudio();                  // shut down and cleanup SDL_Mixer API
   SDL_GL_DeleteContext(sdl.context); // destroy OpenGL instance
   SDL_DestroyWindow(sdl.p_window);   // close app window
@@ -106,9 +104,9 @@ void Application::init_library_SDL()
   if (IMG_Init(IMG_INIT_PNG) == 0)                           // load image-format support indicated by flag(s)
     Debug::log_error_from(Debug::application,IMG_GetError());
   if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) // initialize SDL_Mixer API
-    Debug::log_error_from(Debug::application, Mix_GetError());
+    Debug::log_error_from(Debug::application,Mix_GetError());
   if (!Mix_Init(MIX_INIT_MP3))                               // init file support for MP3. Note: no need to call Mix_Init for wav (simply returns true if already initialized)
-    Debug::log_error_from(Debug::application, Mix_GetError());
+    Debug::log_error_from(Debug::application,Mix_GetError());
   Debug::log_from(Debug::application,"SDL subsystems initialized");
 }
 
@@ -140,7 +138,7 @@ void Application::wrangle_modern_opengl_api_GLEW()
   glewExperimental = GL_TRUE; // declared in glew.h
   GLenum glew_error = glewInit();
   if (glew_error != GLEW_OK)
-    Debug::log_error_from(Debug::application,"GLEW failed to initialize: ", glewGetErrorString(glew_error));
+    Debug::log_error_from(Debug::application,"GLEW failed to initialize: ",glewGetErrorString(glew_error));
   Debug::log_from(Debug::application,"OpenGL function pointers loaded");
 }
 
@@ -159,5 +157,7 @@ void Application::print_opengl_extensions()
   glGetIntegerv(GL_NUM_EXTENSIONS, &n_extensions);
   Debug::log("[Application] ",n_extensions," OpenGL extensions found to be implemented by this hardware");
   for (i = 0; i < n_extensions; i++)
+  {
     Debug::log("\t\t",glGetStringi(GL_EXTENSIONS,i));
+  }
 }

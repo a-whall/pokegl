@@ -59,34 +59,31 @@ namespace Animation
 
   FSM& FSM::create_state(const char *s, Frame_ID_enum fID, vector<Transition> transitions)
   {
-    if (states.find(fID) == states.end())
-    {                               // if state with frame id fID doesn't yet exist
-      states[fID]= new FS(fID);     // create one
-      if (current_state == nullptr)    // if fsa current state is uninitialized
-        current_state= states[fID];       // set it to the newly created state
+    if (states.find(fID) == states.end()) { // if state with frame id fID doesn't yet exist
+      states[fID]= new FS(fID);                // create one
+      if (current_state == nullptr)            // if fsa current state is uninitialized
+        current_state= states[fID];               // set it to the newly created state
     }
-    states[fID]->set_name(s);       // set states name
-    for (Transition t : transitions)// for each event-transition pair
+    states[fID]->set_name(s);               // set states name
+    for (Transition t : transitions)        // for each event-transition pair
     {
-      //states[fID]->add_transition
-      this->add_transition(fID, t);    // Create transition event
+      this->add_transition(fID, t);            // Create transition event
     }
-    return *this;                   // fluent
+    return *this;                           // fluent
   }
 
   void FSM::add_transition(Frame_ID_enum fID, Transition t)
   {
-    // t.first: event_input   ,    t.second: Frame_ID of
-    if (states.find(fID) == states.end())                  // if state with name s doesn't exist
-      states[fID]= new FS(fID);                            // create it
-    if (states.find(t) == states.end())             // if successor state doesn't exist
-      states[t]= new FS(t);                  // create it
-    states[fID]->add_transition(t, states[t]);// call (access unordered_map) state::add_transition
+    if (states.find(fID) == states.end())      // if state with name s doesn't exist
+      states[fID]= new FS(fID);                   // create it
+    if (states.find(t) == states.end())        // if successor state doesn't exist
+      states[t]= new FS(t);                       // create it
+    states[fID]->add_transition(t, states[t]); // call (access unordered_map) state::add_transition
   }
 
   void FSM::input(Frame_ID_enum e)
   {
-    if (current_state != nullptr)                   // if current state is initialized
-      current_state= current_state->change(e, shader); // attempt to change state (state decides whether it does or not)
+    if (current_state != nullptr)                    // if current state is initialized
+      current_state= current_state->change(e,shader);  // attempt to change state (state decides whether it does or not)
   }
 }

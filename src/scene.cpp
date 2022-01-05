@@ -113,8 +113,8 @@ namespace Scene
   void Manager::update(float t)
   {
     for (auto& m : maps)    m->update(t, key_states);
-	  for (auto& s : sprites) s->update(t, key_states);
-	}
+    for (auto& s : sprites) s->update(t, key_states);
+  }
 
   void Manager::render()
   {
@@ -129,7 +129,7 @@ namespace Scene
     }
     for (auto& s : sprites) s->render();
     // TODO: render grass, etc, things that need to be rendered over the player
-	}
+  }
 
   void Manager::clean()
   {
@@ -144,6 +144,6 @@ namespace Scene
     using std::begin;
     using std::end;
     auto is_not_active = [](const Sprite* sprite) { return !sprite->is_active; };
-		sprites.erase( remove_if(begin(sprites),end(sprites),is_not_active), end(sprites) );
-	}
+    sprites.erase( remove_if(begin(sprites),end(sprites),is_not_active), end(sprites) );
+  }
 }

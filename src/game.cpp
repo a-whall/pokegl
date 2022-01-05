@@ -10,7 +10,7 @@ namespace Game
   void Instance::on_init()
   {
     scene_manager.sound.load_sfx();
-    //scene_manager.sound.play_song(new_bark_town);
+    scene_manager.sound.play_song(new_bark_town);
     map_shader= &scene_manager.new_shader("shader/MapSprite.glsl");
     player_shader= &scene_manager.new_shader("shader/PlayerSprite.glsl");
     scene_manager.world_graph= world= new World_Graph();;
