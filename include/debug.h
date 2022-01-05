@@ -25,12 +25,13 @@ namespace Debug
     warp        = 0x2000,
     //open      = 0x4000,
     //open      = 0x8000,
+    object      = player | map | shader | world,
     all         = 0xffff
   };
 
   // set to zero to turn off general program output, operator<OR> any source enum values to "turn on" that output source 
   // note: prior to compiling, you should make clean for changes to affect the whole program correctly.
-  constexpr unsigned output_filter= all;//player | scene | map | sound | stats;
+  constexpr unsigned output_filter= object | stats;
 
   extern void GLAPIENTRY my_debug_callback(
     GLenum gl_debug_source,
