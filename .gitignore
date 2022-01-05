@@ -2,11 +2,13 @@
 .vscode
 
 # ignore the program executable
-poke
+pokegl
 *.exe
 
 # ignore the object directory
 /obj
+obj
+*.o
 
 # ignore windows dll
 *.dll
