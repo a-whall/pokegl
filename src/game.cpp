@@ -2,8 +2,6 @@
 
 namespace Game
 {
-  //Map    * p_active_map= nullptr;
-  //Player * p_player= nullptr;
   Shader * map_shader= nullptr;
   Shader * player_shader= nullptr;
 
