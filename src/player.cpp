@@ -175,22 +175,22 @@ void Player::update(float t, const Uint8* key_states)
 
     Point spawn = dest; // this is of use when the player is trying to move to a neighbor map
     if (wnode->in_overworld) { // in overworld logic: prepare to potentially check neighbor map
-      if (dest.y == maps[0]->h_tiles) {
+      if (dest.y == scene_manager.maps[middle]->h_tiles) {
         mID = wnode->up();           // change the mID to determine which p_collision to retrieve
         dest.y = 0;                  // "overflow" destination coordinate
         spawn.y = -1;                // update the location the player will need to be placed for the impending map update
       }
       else if (dest.x == -1) {
         mID = wnode->left();
-        dest.x = maps[2]->w_tiles - 1;
-        spawn.x = maps[2]->w_tiles;
+        dest.x = scene_manager.maps[left]->w_tiles - 1;
+        spawn.x = scene_manager.maps[left]->w_tiles;
       }
       else if (dest.y == -1) {
         mID = wnode->down();
-        dest.y = maps[3]->h_tiles - 1;
-        spawn.y = maps[3]->h_tiles;
+        dest.y = scene_manager.maps[down]->h_tiles - 1;
+        spawn.y = scene_manager.maps[down]->h_tiles;
       }
-      else if (dest.x == maps[0]->w_tiles) {
+      else if (dest.x == scene_manager.maps[middle]->w_tiles) {
         mID = wnode->right();
         dest.x = 0;
         spawn.x = -1;
@@ -274,7 +274,7 @@ void Player::take_input(const Uint8* key_states)
   if (info_button_delay_counter == 0) {
     if (key_states[SDL_SCANCODE_P]) std::cout << "[Player] position = " << x_position << ',' << y_position << '\n';
     if (key_states[SDL_SCANCODE_F]) std::cout << "[Player] current frame state: " << fsm.get_fid() << '\n';
-    if (key_states[SDL_SCANCODE_0]) maps[0]->is_visible = !maps[0]->is_visible;
+    if (key_states[SDL_SCANCODE_0]) scene_manager.maps[middle]->is_visible = !scene_manager.maps[middle]->is_visible;
     info_button_delay_counter= 8;
   }
   if (info_button_delay_counter > 0) --info_button_delay_counter;
