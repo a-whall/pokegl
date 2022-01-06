@@ -22,7 +22,7 @@ Player::Player(Scene::Manager& man, Shader &s)
   init_buffers();
   init_animations();
   glUseProgram(shader.handle);
-  shader.set("frameID", idle_d);
+  shader.set("frame_ID", idle_d);
   glUseProgram(0);
 }
 
@@ -217,7 +217,9 @@ void Player::update(float t, const Uint8* key_states)
 void Player::render()
 {
   glUseProgram(shader.handle);
-  shader.set("MVP", cam.get_ViewToProjection_Matrix() * mv);
+  shader.set("mvp", cam.get_ViewToProjection_Matrix() * mv);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, this->opengl_texture_ID);
   glBindVertexArray(vao);
   glDrawElements(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);
