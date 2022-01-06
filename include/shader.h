@@ -9,6 +9,7 @@ enum shader_t : int { NONE = -1, VERT = 0, TESC = 1, TESE = 2, GEOM = 3, FRAG = 
 class Shader
 {
   std::unordered_map<const char*, int> uniform_location_map;
+  std::unordered_map<const char*, int> nonexistent_uniform_list;
   int get_uniform_location(const char* name);
 
 public:
