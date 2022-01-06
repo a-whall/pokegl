@@ -8,6 +8,7 @@
 #include "shader.h"
 #include "sound.h"
 #include "map_orientation.h"
+#include "text.h"
 
 namespace Scene
 {
@@ -20,15 +21,17 @@ namespace Scene
     vector<Shader*> shaders;
     //Map * maps[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
   public:
+    Text_Sprite * text= nullptr;
     unordered_map<Map_Orientation,Map*> maps;
     Sound_Manager sound;
     World_Graph * world_graph= nullptr;
     Camera * camera_controller= nullptr;
     const Uint8 * key_states= nullptr;
     void init_camera(int, int);
-    Player& new_player(Shader& s);
+    Player& new_player(Shader & s);
     Shader& new_shader(const char *);
-    void    init_maps(Shader& s);
+    void    init_maps(Shader & s);
+    void init_text(Shader & s);
     void update_map(Map_ID_enum);
     void update(float t);
     void render();
