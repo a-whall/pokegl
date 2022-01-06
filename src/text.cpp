@@ -11,7 +11,10 @@ Text_Sprite::Text_Sprite(Scene::Manager& man, Shader& s)
 //   shader.set("frame_ID", idle_d);
 //   glUseProgram(0);
 }
-Text_Sprite::~Text_Sprite() {}
+Text_Sprite::~Text_Sprite()
+{
+    delete char_buffer;
+}
 
 void Text_Sprite::init_textures()
 {
@@ -159,8 +162,12 @@ void Text_Sprite::init_buffers()
     0, 1, 2,
     2, 3, 0
   };
-  char_buffer[36]= { 1 };
-  char_buffer[1]= 8;
+
+  constexpr GLsizei buffer_size = 36;
+  char_buffer= new GLint[buffer_size];
+  for (int i = 0; i < buffer_size; ++i)
+    char_buffer[i] = i + 1;
+
   this->n_verts= 6;
   glGenVertexArrays(1, &this->vao);
   glGenBuffers(1, &this->ebo);
@@ -173,7 +180,7 @@ void Text_Sprite::init_buffers()
   glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vbo_data), vbo_data, GL_STATIC_DRAW);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, this->ssbo);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(char_buffer), char_buffer, GL_DYNAMIC_DRAW);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, buffer_size*sizeof(int), char_buffer, GL_DYNAMIC_DRAW); // 4 bytes per int, 36 characters in the buffer.
 
   glEnableVertexArrayAttrib(this->vao, 0);
   glVertexAttribPointer(0, 3, GL_FLOAT, false, 20, (void*)0);
