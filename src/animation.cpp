@@ -28,7 +28,7 @@ namespace Animation
     if (event_map.find(event) != event_map.end())
     {
       glUseProgram(shader->handle);
-      shader->set("frameID", event_map[event]->frame_ID);
+      shader->set("frame_ID", event_map[event]->frame_ID);
       glUseProgram(0);
       Debug::log_from(Debug::animation,name," -> ",event_map[event]->get_name());
       result = event_map[event];
