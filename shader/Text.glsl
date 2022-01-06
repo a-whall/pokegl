@@ -20,7 +20,7 @@ uniform float line_spacing= 0.1;
 void main()
 {
   tex_coord = vertex_tex_coord;
-  char_data = gl_InstanceID + 7;
+  char_data = char_at[gl_InstanceID];
   int col = gl_InstanceID % 18;
   int row = gl_InstanceID / 18;
   float x = -1.0 + left_margin + vertex_position.x * text_size + col * (text_size + char_spacing);
