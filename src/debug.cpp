@@ -76,6 +76,7 @@ const char* Debug::str(Debug_Source_enum src_enum)
     case scene:       return "[Scene ] ";
     case sound:       return "[Sound ] ";
     case shader:      return "[Shader] ";
+    case text:        return "[ Text ] ";
     case world:       return "[World ] ";
     default:          return "[      ] ";
   }

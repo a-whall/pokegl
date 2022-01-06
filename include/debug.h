@@ -9,6 +9,7 @@ namespace Debug
 
   enum Debug_Source_enum : uint16_t
   {
+    none        = 0x0000,
     animation   = 0x0001,
     application = 0x0002,
     camera      = 0x0004,
@@ -23,15 +24,15 @@ namespace Debug
     world       = 0x0800,
     sound       = 0x1000,
     warp        = 0x2000,
-    //open      = 0x4000,
+    text        = 0x4000,
     //open      = 0x8000,
-    object      = player | map | shader | world,
+    object      = text | player | map | shader | world,
     all         = 0xffff
   };
 
   // set to zero to turn off general program output, operator<OR> any source enum values to "turn on" that output source 
   // note: prior to compiling, you should make clean for changes to affect the whole program correctly.
-  constexpr unsigned output_filter= object | stats;
+  constexpr unsigned output_filter= compiler | shader | stats;
 
   extern void GLAPIENTRY my_debug_callback(
     GLenum gl_debug_source,
