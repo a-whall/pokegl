@@ -2,6 +2,7 @@
 #include <sstream>
 #include <fstream>
 #include <iomanip>
+#include <cstring>
 
 Shader::Shader(GLuint gl_program_ID)
 {
@@ -20,13 +21,17 @@ int Shader::get_uniform_location(const char *name)
   if (uniform_location_map.find(name) != uniform_location_map.end())
     return uniform_location_map[name];
 
+  else if (nonexistent_uniform_list.find(name) != nonexistent_uniform_list.end())
+    return -1;
+
   int location = glGetUniformLocation(handle, name);
   if (location == -1) {
     Debug::log_error_from(Debug::shader,"cache warning: '",name,"' is not an active uniform,",
     " it either doesn't exist or the OpenGL compiler optimized it out of program ",handle);
+    nonexistent_uniform_list[name]= -1;
   }
   else {
-    uniform_location_map[name] = location;
+    uniform_location_map[name]= location;
     Debug::log_from(Debug::shader,"program ",handle," uniform variable '",name,"' location has been cached");
   }
   return location;
@@ -83,11 +88,9 @@ void compile(const int shader_id, const char* shader_file)
   Debug::log_from(Debug::compiler,"parsing ", shader_file);
   while (getline(ifs, line))
   {
-    // if compiler debug source is enabled, print each line of glsl source code as it is parsed.
-    Debug::log_from(Debug::compiler,std::setw(2),line_count++,"| ",line.c_str());
-
     // try to parse shader directive (Note: required to write to the correct string stream)
     if (line_contains("#shader")) {
+      line_count= 0;
       if      (line_contains("vertex"))       t=VERT;
       else if (line_contains("compute"))      t=COMP;
       else if (line_contains("geometry"))     t=GEOM;
@@ -120,6 +123,8 @@ void compile(const int shader_id, const char* shader_file)
         Debug::log_error_abort(Debug::compiler,"pokegl expects the first line of shader source code to be a #shader directive");
       ss[t] << line << "\n";
     }
+    // if compiler debug source is enabled, print each line of glsl source code as it is parsed.
+    Debug::log_from(Debug::compiler,std::setw(2),line_count++,"| ",line.c_str());
   }
   // COMPILING ======================================================================================================================================
   for (GLuint i = VERT; i < 6; i++)
@@ -149,7 +154,8 @@ void compile(const int shader_id, const char* shader_file)
         glGetShaderiv(handles[i], GL_INFO_LOG_LENGTH, &log_length);
         error_log = (GLchar*)malloc(log_length);
         glGetShaderInfoLog(handles[i], log_length, nullptr, error_log);
-        Debug::log_error_abort(Debug::compiler,shader_file," :\n ", str(i) ," shader compilation failed.\n", error_log);
+        error_log[strcspn(error_log,"\n")] = 0;
+        Debug::log_error_abort(Debug::compiler,str(i)," shader compilation failed. In file ",shader_file,":", error_log);
       }
       else
         Debug::log_from(Debug::compiler,"compiled ",str(i)," unit successfully");
@@ -165,7 +171,8 @@ void compile(const int shader_id, const char* shader_file)
     glGetProgramiv(shader_id, GL_INFO_LOG_LENGTH, &log_length);
     error_log = (GLchar*)malloc(log_length);
     glGetProgramInfoLog(shader_id, log_length, nullptr, error_log);
-    Debug::log_error_abort(Debug::compiler,"failed to link shader program",error_log);
+    error_log[strcspn(error_log,"\0") - 1] = 0;
+    Debug::log_error_abort(Debug::compiler,"shader program failed to link.\n\n",error_log,'\n');
   }
   else {
     Debug::log_from(Debug::compiler,"linked program ",shader_id," successfully");
