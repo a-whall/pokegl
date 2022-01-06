@@ -8,7 +8,7 @@ namespace Scene {
 class Text_Sprite : public Sprite
 {
   GLuint vao, vbo, ebo, ssbo, opengl_texture_ID;
-  char char_buffer[36];
+  int * char_buffer;
 public:
   Text_Sprite(Scene::Manager& ,Shader&);
   ~Text_Sprite();
