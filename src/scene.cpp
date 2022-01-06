@@ -18,6 +18,11 @@ namespace Scene
     return *sprites.back();
   }
 
+  void Manager::init_text(Shader & s)
+  {
+    this->text = new Text_Sprite(*this, s);
+  }
+
   void Manager::init_maps(Shader& s)
   {
     World_Node * active_wnode = world_graph->get_current_node();
@@ -117,6 +122,7 @@ namespace Scene
   {
     for (auto& s : sprites) s->update(t, key_states);
     for (auto& m : maps)    m.second->update(t, key_states);
+    text->update(t, key_states);
   }
 
   void Manager::render()
@@ -132,6 +138,7 @@ namespace Scene
     }
     for (auto& s : sprites) s->render();
     // TODO: render grass, etc, things that need to be rendered over the player
+    text->render();
   }
 
   void Manager::clean()
@@ -139,6 +146,7 @@ namespace Scene
     for (auto& s: sprites) delete s;
     for (auto& m: maps)    delete m.second;
     for (auto& s: shaders) delete s;
+    delete text;
   }
 
   void Manager::refresh()
