@@ -19,7 +19,6 @@ namespace Scene
   {
     vector<Player*> sprites;
     vector<Shader*> shaders;
-    //Map * maps[5] = {nullptr, nullptr, nullptr, nullptr, nullptr};
   public:
     Text_Sprite * text= nullptr;
     unordered_map<Map_Orientation,Map*> maps;
@@ -30,7 +29,7 @@ namespace Scene
     void init_camera(int, int);
     Player& new_player(Shader & s);
     Shader& new_shader(const char *);
-    void    init_maps(Shader & s);
+    void init_maps(Shader & s);
     void init_text(Shader & s);
     void update_map(Map_ID_enum);
     void update(float t);
