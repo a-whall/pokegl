@@ -4,70 +4,88 @@
 
 namespace Debug
 {
+  // log functions of this namespace use the following output streams:
+  using std::ostream;
   using std::cout;
   using std::cerr;
 
-  enum Debug_Source_enum : uint16_t
-  {
-    none        = 0x0000,
-    animation   = 0x0001,
-    application = 0x0002,
-    camera      = 0x0004,
-    collision   = 0x0008,
-    compiler    = 0x0010,
-    stats       = 0x0020,
-    game        = 0x0040,
-    map         = 0x0080,
-    player      = 0x0100,
-    scene       = 0x0200,
-    shader      = 0x0400,
-    world       = 0x0800,
-    sound       = 0x1000,
-    warp        = 0x2000,
-    text        = 0x4000,
-    //open      = 0x8000,
-    object      = text | player | map | shader | world,
-    all         = 0xffff
-  };
+  // strings to change terminal font color
+  const std::string red("\033[0;31m");
+  const std::string green("\033[1;32m");
+  const std::string yellow("\033[1;33m");
+  const std::string cyan("\033[0;36m");
+  const std::string magenta("\033[0;35m");
+  const std::string reset("\033[0m");
 
-  // set to zero to turn off general program output, operator<OR> any source enum values to "turn on" that output source 
-  // note: prior to compiling, you should make clean for changes to affect the whole program correctly.
-  constexpr unsigned output_filter= compiler | shader | stats;
-
-  extern void GLAPIENTRY my_debug_callback(
-    GLenum gl_debug_source,
-    GLenum gl_debug_type,
-    GLuint gl_error_id,
-    GLenum gl_debug_severity,
-    GLsizei length,
-    const GLchar *msg,
-    const void *param
-  );
-
+  // OpenGL callback implementation
   void submit_debug_callback();
+  extern void GLAPIENTRY my_debug_callback(GLenum,GLenum,GLuint,GLenum,GLsizei,const GLchar *,const void *);
 
+
+
+  // flags to control general program output
+  enum Debug_Source_enum : uint32_t
+  {
+    none        = 0x00000000,
+    animation   = 0x00000001,
+    application = 0x00000002,
+    camera      = 0x00000004,
+    collision   = 0x00000008,
+    compiler    = 0x00000010,
+    stats       = 0x00000020,
+    game        = 0x00000040,
+    map         = 0x00000080,
+    player      = 0x00000100,
+    scene       = 0x00000200,
+    shader      = 0x00000400,
+    world       = 0x00000800,
+    sound       = 0x00001000,
+    warp        = 0x00002000,
+    text        = 0x00004000,
+    textbox     = 0x00008000,
+    sprite      = 0x00010000,
+    //open      = 0x00020000,
+    //open      = 0x00040000,
+    //open      = 0x00080000,
+    //open      = 0x00100000,
+    //open      = 0x00200000,
+    //open      = 0x00400000,
+    //open      = 0x00800000,
+    //open      = 0x01000000,
+    //open      = 0x02000000,
+    //open      = 0x04000000,
+    //open      = 0x08000000,
+    //open      = 0x10000000,
+    //open      = 0x20000000,
+    //open      = 0x40000000,
+    //open      = 0x80000000,
+    object      = text | player | map | shader | world,
+    all         = 0xffffffff
+  };
+  constexpr unsigned output_filter= compiler | shader | stats;
   const char* str(Debug_Source_enum);
 
-  template<typename ... Args>
+
+
+  // Below are pokegl's log functions used throughout the program for debug output
+
+  template<ostream& stream, typename ... Args>
   void log(Args&&... args)
   {
-    (cout << ... << args) << '\n';
+    (stream << ... << args) << '\n';
   }
 
   template<typename ... Args>
-  void log_error_abort(Debug_Source_enum src_id, Args&&... args)
+  void log_error_abort(Debug_Source_enum src, Args&&... args)
   {
-    cerr << str(src_id) << "fatal error: ";
-    (cerr << ... << args) << '\n'; // fold expr (C++17): Binary left fold
-    cout << "[ Exit ] " << EXIT_FAILURE << '\n';
+    log< cerr >(str(src),red,"fatal error: ",reset, std::forward<Args>(args)... , "\n",magenta,"[ Exit ] ",EXIT_FAILURE,reset);
     exit(EXIT_FAILURE);
   }
 
   template<typename ... Args>
-  void log_error_from(Debug_Source_enum src_id, Args&&... args)
+  void log_error_from(Debug_Source_enum src, Args&&... args)
   {
-    cout << str(src_id) << "error: ";
-    (cerr << ... << args) << '\n';
+    log< cerr >(str(src),"error: ", std::forward<Args>(args)...);
   }
 
   template<typename ... Args>
@@ -77,12 +95,8 @@ namespace Debug
   }
 
   template<typename ... Args>
-  void log_from(Debug_Source_enum src_enum, Args&&... args)
+  void log_from(Debug_Source_enum src, Args&&... args)
   {
-    if (src_enum & output_filter)
-    {
-      cout << str(src_enum);
-      log(std::forward<Args>(args)...);
-    }
+    if (src & output_filter) log<cout>(str(src), std::forward<Args>(args)...);
   }
 }
