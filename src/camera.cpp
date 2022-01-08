@@ -15,8 +15,8 @@ Camera::Camera(vec3 pos, vec3 view_direction, float aspect)
   up_vector = world_up_vector;
 }
 
-mat4 Camera::get_WorldToView_Matrix()      { return lookAt(position, position + forward_vector, world_up_vector); }
-mat4 Camera::get_ViewToProjection_Matrix() { return view_to_projection; }
+mat4 Camera::view()      { return lookAt(position, position + forward_vector, world_up_vector); }
+mat4 Camera::projection() { return view_to_projection; }
 vec3 Camera::get_position()                { return position; }
 
 void Camera::set_Position(vec3 pos)      { position = pos; }
