@@ -5,6 +5,14 @@
 
 namespace Scene
 {
+  void Manager::print_objects()
+  {
+    for (Player * p : sprites) p->identify();
+    for (auto& m : maps) m.second->identify();
+    textbox->identify();
+    text->identify();
+  }
+
   void Manager::init_camera(int x, int y)
   {
     float aspect_ratio (x / y);
@@ -18,9 +26,10 @@ namespace Scene
     return *sprites.back();
   }
 
-  void Manager::init_text(Shader & s)
+  void Manager::init_text(Shader & s, Shader& s2)
   {
     this->text = new Text_Sprite(*this, s);
+    this->textbox = new Text_Box_Sprite(*this, s2);
   }
 
   void Manager::init_maps(Shader& s)
@@ -122,6 +131,7 @@ namespace Scene
   {
     for (auto& s : sprites) s->update(t, key_states);
     for (auto& m : maps)    m.second->update(t, key_states);
+    textbox->update(t, key_states);
     text->update(t, key_states);
   }
 
@@ -138,6 +148,7 @@ namespace Scene
     }
     for (auto& s : sprites) s->render();
     // TODO: render grass, etc, things that need to be rendered over the player
+    textbox->render();
     text->render();
   }
 
