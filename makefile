@@ -4,9 +4,9 @@
 APPBIN = pokegl
 DEBUGBIN = debug
 
-# must update these lists if you create a new file
-DEP_FILES := animation.h application.h camera.h collision.h debug.h frameid.h game.h map_orientation.h map.h mapid.h player.h scene.h sfxid.h shader.h sound.h sprite.h text.h warps.h world.h
-OBJ_FILES := animation.o application.o camera.o collision.o debug.o game.o map.o main.o player.o scene.o shader.o sound.o sprite.o text.o warps.o world.o
+# must manually update these lists if you create a new file
+DEP_FILES := animation.h application.h camera.h collision.h debug.h frameid.h game.h map_orientation.h map.h mapid.h player.h scene.h sfxid.h shader.h sound.h sprite.h text.h textbox.h warps.h world.h
+OBJ_FILES := animation.o application.o camera.o collision.o debug.o game.o map.o main.o player.o scene.o shader.o sound.o sprite.o text.o textbox.o warps.o world.o
 MAIN_OBJ_FILE := main.o
 
 # compiler and language version
@@ -93,7 +93,7 @@ clean:
 	rm $(RM_APP_FLAGS)
 	rm $(RM_DBG_FLAGS)
 
-$(OBJS): $(ODIR)/%.o: $(SDIR)/%.cpp
+$(OBJS): $(ODIR)/%.o: $(SDIR)/%.cpp $(DEPS)
 	$(CC) -c -std=$(CPP_STD) $< $(CFLAGS) $(INCLUDES) -o $@
 
 # Library links for windows
