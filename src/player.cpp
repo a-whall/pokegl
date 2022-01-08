@@ -138,7 +138,7 @@ void Player::init_buffers()
  // @param key_states: a pointer to SDL pressed keys data
 void Player::update(float t, const Uint8* key_states)
 {
-  this->mv= cam.get_WorldToView_Matrix() * this->model;
+  this->mv= cam.view() * this->model;
 
   if (frame_prevent_interupt_counter) {
     // TODO: more general continue_animation() function, along with a higher level animation-state value to decide which animation to 'continue'
@@ -217,7 +217,7 @@ void Player::update(float t, const Uint8* key_states)
 void Player::render()
 {
   glUseProgram(shader.handle);
-  shader.set("mvp", cam.get_ViewToProjection_Matrix() * mv);
+  shader.set("mvp", cam.projection() * mv);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, this->opengl_texture_ID);
   glBindVertexArray(vao);

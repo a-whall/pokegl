@@ -39,7 +39,7 @@ Map::Map(Map_ID_enum mID, Camera &cam, Shader &shader)
   try_to_load_texture();
   init_buffers();
   glUseProgram(shader.handle);
-  shader.set("Tex1",0);
+  shader.set("map_tex",0);
   glUseProgram(0);
   this->translate(0, -.1875); // shift map s.t. 0,0 be the middle of the bottom-left-most tile
 }
@@ -113,10 +113,11 @@ void Map::init_buffers()
 
 void Map::update(float t, const Uint8* keystates)
 {
-  mv= cam.get_WorldToView_Matrix() * model;
+  using namespace Debug;
+  mv= cam.view() * model;
   if (keystates != nullptr && keystates[SDL_SCANCODE_M] && counter == 0) {
     counter = 16;
-    Debug::log_from(Debug::map,std::hex,this,std::dec,": (",model[3].x,",",model[3].y,")");
+    log_from(map,std::hex,this,std::dec,": (",model[3].x,",",model[3].y,")");
   }
   if (counter > 0) --counter;
 }
@@ -125,7 +126,7 @@ void Map::render()
 {
   if (this->is_visible) {
     glUseProgram(shader.handle);
-    shader.set("MVP", cam.get_ViewToProjection_Matrix() * this->mv);
+    shader.set("mvp", cam.projection() * this->mv);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, this->current_gltexID);
     glBindVertexArray(this->vao);
@@ -165,5 +166,5 @@ void Map::change(Map_ID_enum mID)
   glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vbo_data), vbo_data);
   glBindVertexArray(0);
   this->model= glm::translate(glm::mat4(1.0f), glm::vec3(hw - 0.25f, hh - 0.0625f, 0.0f));
-  this->mv= cam.get_WorldToView_Matrix() * this->model;
+  this->mv= cam.view() * this->model;
 }

@@ -190,13 +190,13 @@ void Text_Sprite::init_buffers()
 
 void Text_Sprite::update(float dt, const uint8_t * key_states)
 {
-  this->mv= cam.get_WorldToView_Matrix() * this->model;
+  this->mv= cam.view() * this->model;
 }
 
 void Text_Sprite::render()
 {
   glUseProgram(shader.handle);
-  shader.set("mvp", cam.get_ViewToProjection_Matrix() * mv);
+  shader.set("mvp", cam.projection() * mv);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, this->opengl_texture_ID);
   glBindVertexArray(vao);
