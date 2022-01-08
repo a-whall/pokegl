@@ -23,7 +23,7 @@ void Debug::my_debug_callback(
     default: source_str = "<unknown_error_source>";
   }
   switch (e_gl_debug_type) {
-    case GL_DEBUG_TYPE_ERROR:               type_str = "error: ";        break;
+    case GL_DEBUG_TYPE_ERROR:               type_str = "\033[0;31merror: \033[0m";break;
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: type_str = "warning: ";      break;
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  type_str = "warning: ";      break;
     case GL_DEBUG_TYPE_PORTABILITY:         type_str = "warning: ";      break;
@@ -41,7 +41,7 @@ void Debug::my_debug_callback(
     case GL_DEBUG_SEVERITY_NOTIFICATION:     sev_str = "";         break;
     default: sev_str = "<unkown_error_severity_level>";
   }
-  Debug::log_error('[', source_str, "] ", type_str, msg);
+  Debug::log_error('[',cyan, source_str, reset,"] ", type_str, msg);
 }
 
 void Debug::submit_debug_callback() {
@@ -67,6 +67,7 @@ const char* Debug::str(Debug_Source_enum src_enum)
     case animation:   return "[Animat] ";
     case application: return "[Applic] ";
     case camera:      return "[Camera] ";
+    case code:        return "     ";
     case collision:   return "[Collis] ";
     case compiler:    return "[Compil] ";
     case stats:       return "[Stats ] ";
