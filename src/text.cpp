@@ -7,9 +7,6 @@ Text_Sprite::Text_Sprite(Scene::Manager& man, Shader& s)
 {
   init_buffers();
   init_textures();
-//   glUseProgram(shader.handle);
-//   shader.set("frame_ID", idle_d);
-//   glUseProgram(0);
 }
 Text_Sprite::~Text_Sprite()
 {
