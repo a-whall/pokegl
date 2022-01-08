@@ -19,7 +19,7 @@ namespace Debug
 
   // OpenGL callback implementation
   void submit_debug_callback();
-  extern void GLAPIENTRY my_debug_callback(GLenum,GLenum,GLuint,GLenum,GLsizei,const GLchar *,const void *);
+  extern void GLAPIENTRY my_debug_callback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar *, const void *);
 
 
 
@@ -44,7 +44,7 @@ namespace Debug
     text        = 0x00004000,
     textbox     = 0x00008000,
     sprite      = 0x00010000,
-    //open      = 0x00020000,
+    code        = 0x00020000,
     //open      = 0x00040000,
     //open      = 0x00080000,
     //open      = 0x00100000,
@@ -62,7 +62,7 @@ namespace Debug
     object      = text | player | map | shader | world,
     all         = 0xffffffff
   };
-  constexpr unsigned output_filter= compiler | shader | stats;
+  constexpr unsigned output_filter= compiler | shader | code | stats;
   const char* str(Debug_Source_enum);
 
 
@@ -78,7 +78,7 @@ namespace Debug
   template<typename ... Args>
   void log_error_abort(Debug_Source_enum src, Args&&... args)
   {
-    log< cerr >(str(src),red,"fatal error: ",reset, std::forward<Args>(args)... , "\n",magenta,"[ Exit ] ",EXIT_FAILURE,reset);
+    log< cerr >(str(src),red,"fatal error: ",reset, std::forward<Args>(args)... , "\n[",magenta," Exit ",reset,"] ",magenta,EXIT_FAILURE,reset);
     exit(EXIT_FAILURE);
   }
 
