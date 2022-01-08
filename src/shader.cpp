@@ -5,15 +5,17 @@
 #include <iomanip>
 #include <cstring>
 
+using namespace Debug;
+
 Shader::Shader(GLuint gl_program_ID)
 {
-  Debug::log_from(Debug::shader,"initializing: ",std::hex,this,std::dec," (program) ",gl_program_ID);
+  log_from(shader,"initializing: ",std::hex,this,std::dec," (program) ",gl_program_ID);
   handle = gl_program_ID;
 }
 
 Shader::~Shader()
 {
-  Debug::log_from(Debug::shader,"deleting: ",std::hex,this,std::dec," (program) ",handle);
+  log_from(shader,"deleting: ",std::hex,this,std::dec," (program) ",handle);
   glDeleteProgram(handle);
 }
 
@@ -102,6 +104,7 @@ void compile(const int shader_id, const char* shader_file)
       else if (line_contains("tes control"))  t=TESC;
       else if (line_contains("tes evaluate")) t=TESE;
       else log_error_abort(compiler,"invalid shader preprocessing directive\n\t | #shader\n\t directive must be 1 of:\n\t 'vertex', 'compute', 'geometry', 'fragment', 'tes control', or 'tes evaluate'\n\t compilation terminated.\n");
+      log_from(code,"  _______________________________________________________________");
     }
     // else in case the line contains an include directive: dump lines from a temporary input-file-stream
     else if (line_contains("#include")) {
@@ -112,17 +115,20 @@ void compile(const int shader_id, const char* shader_file)
       string specified_file (line.substr(start, last - start));
       string includePath ("shader/"+ specified_file +".glsl"); // Note expected path: shader/ *** .glsl
       ifstream temp_input(includePath);
-      if (temp_input.fail())
+      if (temp_input.fail()) {
+        log_from(code,red,setw(2),line_count++,"| ",line,'\n',reset);
         log_error_abort(compiler,specified_file,": No such file in shader directory\n\t ",shader_file,"\n\t | #include ",red,'<',specified_file,'>',reset,"\n\t compilation terminated.\n");
+      }
       while (getline(temp_input, line))
       {
         ss[t] << line << "\n";
-        log_from(compiler,setw(2),line_count++,"| ",line); // log each line that gets input
+        log_from(code,setw(2),line_count++,"| ",line); // log each line that gets input
       }
       continue;
     }
     // else in case the line contains an end directive: stop reading the glsl file
     else if (line_contains("#end")) {
+      log_from(code);// new line
       break;
     }
     // in any other case: the line gets pushed to the source code string stream for the shader of type t
@@ -131,7 +137,7 @@ void compile(const int shader_id, const char* shader_file)
         log_error_abort(compiler,"pokegl expects the first line of shader source code to be a #shader directive");
       ss[t] << line << "\n";
     }
-    log_from(compiler,std::setw(2),line_count++,"| ",line);
+    log_from(code,std::setw(2),line_count++,"| ",line);
   }
   // COMPILING ======================================================================================================================================
   for (GLuint i = VERT; i < 6; i++)
@@ -149,7 +155,7 @@ void compile(const int shader_id, const char* shader_file)
       );
 
       if (handles[i] == 0)
-        Debug::log_error_abort(Debug::compiler,"glCreateShader() failed");
+        log_error_abort(compiler,"glCreateShader() failed");
 
       auto s = ss[i].str();
       const char* source_code = s.c_str();
@@ -162,10 +168,10 @@ void compile(const int shader_id, const char* shader_file)
         error_log = (GLchar*)malloc(log_length);
         glGetShaderInfoLog(handles[i], log_length, nullptr, error_log);
         error_log[strcspn(error_log,"\n")]= 0;
-        Debug::log_error_abort(Debug::compiler,str(i)," shader compilation failed. In file ",shader_file,":", error_log);
+        log_error_abort(compiler,str(i)," shader compilation failed. In file ",shader_file,":", error_log);
       }
       else
-        Debug::log_from(Debug::compiler,"compiled ",str(i)," unit successfully");
+        log_from(compiler,"compiled ",str(i)," unit successfully");
 
       glAttachShader(shader_id, handles[i]);
     }
