@@ -15,7 +15,7 @@ namespace Scene
 {
   using std::unordered_map;
   using std::vector;
-  
+
   class Manager
   {
     vector<Player*> sprites;

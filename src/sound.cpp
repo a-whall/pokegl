@@ -2,7 +2,9 @@
 #include "debug.h"
 #include <sstream>
 
+
 using namespace Debug;
+
 
 void Sound_Manager::load_sfx()
 {
@@ -15,6 +17,7 @@ void Sound_Manager::load_sfx()
       log_error_from(sound,Mix_GetError());
   }
 }
+
 
 void Sound_Manager::play_song(Track_ID tID)
 {
@@ -29,6 +32,7 @@ void Sound_Manager::play_song(Track_ID tID)
   else
     log_error_from(sound,Mix_GetError());
 }
+
 
 void Sound_Manager::play_sfx(SFX_ID_enum sID)
 {
@@ -48,6 +52,7 @@ const char * get_audio_path(Track_ID tID)
     default: return "file due to invalid Track ID enum";
   }
 }
+
 
 const char * get_sfx_path(SFX_ID sID)
 {
