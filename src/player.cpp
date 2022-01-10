@@ -7,6 +7,8 @@
 #include "warps.h"
 #include "scene.h"
 
+using namespace Debug;
+
 // Player constructor : Initialize a bunch of player state values. Starts the player facing down.
 // @param cam: a reference to the scene camera
 // @param active_map: a pointer to a pointer which points to the active map (the central map tile of the scene)
@@ -16,13 +18,21 @@ Player::Player(Scene::Manager& man, Shader &s)
   scene_manager(man),
   fsm()
 {
-  Debug::log_from(Debug::player,"initializing: ",std::hex,this,std::dec);
-  frame_prevent_interupt_counter = info_button_delay_counter = stride_left = x_position = y_position = 0;
-  fsm.set_shader(&shader);                                 
+  obj_identify(player,alloc,this,"Player");
+
+  // initialize all member variables to 0
+  frame_prevent_interupt_counter
+  = info_button_delay_counter
+  = bump_counter 
+  = stride_left
+  = x_position
+  = y_position = 0;
+
+  fsm.set_shader(&shader);
   init_buffers();
   init_animations();
   glUseProgram(shader.handle);
-  shader.set("frame_ID", idle_d);
+  shader.set("player_frame_ID", idle_d);
   glUseProgram(0);
 }
 
@@ -32,8 +42,8 @@ Player::~Player()
   glDeleteBuffers(1, &vbo);
   glDeleteBuffers(1, &ebo);
   glDeleteVertexArrays(1, &vao);
-  glDeleteTextures(1, &opengl_texture_ID);
-  Debug::log_from(Debug::player,"deleting: ",std::hex,this,std::dec);
+  glDeleteTextures(1, &t);
+  obj_identify(player,dealloc,this,"Player");
 }
 
 // Frames are loaded using IMG_Load() from the SDL_image library. This function creates an OpenGL texture2D_array texture object which is intended to be cleaned up by the player destructor.
@@ -69,15 +79,16 @@ void Player::init_animations()
   };
 
   glActiveTexture(GL_TEXTURE0); // specify which GL_TEXTURE unit subsequent texture state calls will affect
-  glGenTextures(1, & this->opengl_texture_ID);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, this->opengl_texture_ID);
+  glGenTextures(1, &t);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, t);
 
   glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, f_info.width_pixels, f_info.height_pixels, f_info.count); // allocate GPU memory
   for (const char * file_path : frames)
   { // Load each frame's pixel data from file into a GLubyte array
     loaded_image = IMG_Load(file_path);
     if (loaded_image == nullptr)
-      Debug::log_error_abort(Debug::player,std::hex,this,std::dec,": failed to load an animation texture:",file_path);
+      log_error_abort(player,obj_addr(this),": texture-load failed\n\t ",
+        white,file_path,reset,"\n\t ", IMG_GetError());
     memcpy(p_pixel_data + offset, loaded_image->pixels, f_info.bytes_per_frame);
     SDL_FreeSurface(loaded_image);
     offset += f_info.bytes_per_frame;
@@ -138,7 +149,7 @@ void Player::init_buffers()
  // @param key_states: a pointer to SDL pressed keys data
 void Player::update(float t, const Uint8* key_states)
 {
-  this->mv= cam.get_WorldToView_Matrix() * this->model;
+  this->mv= cam.view() * this->model;
 
   if (frame_prevent_interupt_counter) {
     // TODO: more general continue_animation() function, along with a higher level animation-state value to decide which animation to 'continue'
@@ -208,7 +219,13 @@ void Player::update(float t, const Uint8* key_states)
     }
     else {
       // TODO: add a frame deley counter solution for this so that it does not spam when walking into something.
-      scene_manager.sound.play_sfx(bump_wall);
+      if (bump_counter == 0) {
+        scene_manager.sound.play_sfx(bump_wall);
+        bump_counter= 24;
+      }
+      if (bump_counter > 0) {
+        --bump_counter;
+      }
     }
   }
 }
@@ -217,9 +234,9 @@ void Player::update(float t, const Uint8* key_states)
 void Player::render()
 {
   glUseProgram(shader.handle);
-  shader.set("mvp", cam.get_ViewToProjection_Matrix() * mv);
+  shader.set("player_mvp", cam.projection() * mv);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, this->opengl_texture_ID);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, this->t);
   glBindVertexArray(vao);
   glDrawElements(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);

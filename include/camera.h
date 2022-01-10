@@ -38,8 +38,8 @@ public:
   void handleMouseMotion(float, float);
   void handleMouseScroll(int);
 
-  mat4 get_WorldToView_Matrix();
-  mat4 get_ViewToProjection_Matrix();
+  mat4 view();
+  mat4 projection();
   vec3 get_position();
   void set_Position(vec3 pos);
   void set_ViewDirection(vec3 dir);

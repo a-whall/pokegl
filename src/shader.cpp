@@ -4,15 +4,17 @@
 #include <iomanip>
 #include <cstring>
 
+using namespace Debug;
+
 Shader::Shader(GLuint gl_program_ID)
 {
-  Debug::log_from(Debug::shader,"initializing: ",std::hex,this,std::dec," (program) ",gl_program_ID);
+  obj_identify(shader,alloc,this,"Shader");
   handle = gl_program_ID;
 }
 
 Shader::~Shader()
 {
-  Debug::log_from(Debug::shader,"deleting: ",std::hex,this,std::dec," (program) ",handle);
+  obj_identify(shader,dealloc,this,"Shader");
   glDeleteProgram(handle);
 }
 
@@ -26,13 +28,13 @@ int Shader::get_uniform_location(const char *name)
 
   int location = glGetUniformLocation(handle, name);
   if (location == -1) {
-    Debug::log_error_from(Debug::shader,"cache warning: '",name,"' is not an active uniform,",
-    " it either doesn't exist or the OpenGL compiler optimized it out of program ",handle);
+  log_error_from(shader,"cache warning\n\t | \"",red,name,reset,"\" is not an active ",cyan,"uniform ",reset,
+    "of program ",pink,handle,reset,",\n\t it doesn't exist or the ",cyan,"OpenGL Compiler",reset," has optimized it out of the shader executable.\n");
     nonexistent_uniform_list[name]= -1;
   }
   else {
     uniform_location_map[name]= location;
-    Debug::log_from(Debug::shader,"program ",handle," uniform variable '",name,"' location has been cached");
+    log_from(shader,pink,handle,reset,':',cyan," uniform ",reset,'\"',white1,name,reset,"\" location ",green,"cached",reset);
   }
   return location;
 }
@@ -56,75 +58,85 @@ Shader* Shader::set(const char* name, const glm::mat4& matrix){ glUniformMatrix4
 void compile(const int shader_id, const char* shader_file)
 {
   using namespace std;
+  using namespace Debug;
 
+  // compiler state variables
   GLchar * error_log;
   string line;
   stringstream ss[6];
   GLuint handles[6] = {0,0,0,0,0,0};
-  ifstream ifs { shader_file };
+  ifstream input_stream (shader_file);
   shader_t t = NONE;
   GLint status_errno, log_length, line_count = 0;
 
+  // helper to determine if the current line contains a given phrase
   auto line_contains = [&line](string phrase)
   {
     return line.find(phrase) != string::npos;
   };
 
+  // helper to convert an integer to a string representation of shader type
   auto str = [](GLint i)
   {
-    switch(i)
-    {
-      case VERT: return "vertex";
-      case TESC: return "tes control";
-      case TESE: return "tes evaluate";
-      case GEOM: return "geometry";
-      case FRAG: return "fragment";
-      case COMP: return "compute";
-      default: return "<unidentified shader type>";
+    switch(i) {
+      case VERT: return"vertex";
+      case TESC: return"tes control";
+      case TESE: return"tes evaluate";
+      case GEOM: return"geometry";
+      case FRAG: return"fragment";
+      case COMP: return"compute";
+      default: return"<invalid shader type>";
     }
   };
 
   // PRE COMPILING ==================================================================================================================================
-  Debug::log_from(Debug::compiler,"parsing ", shader_file);
-  while (getline(ifs, line))
+  log_from(code,"parsing: ",white, shader_file,reset);
+  while (getline(input_stream, line))
   {
-    // try to parse shader directive (Note: required to write to the correct string stream)
+    // try to parse shader directive (Note: this directive is required to write to the correct string stream)
     if (line_contains("#shader")) {
-      line_count= 0;
+      line_count= 0; // reset line count
       if      (line_contains("vertex"))       t=VERT;
       else if (line_contains("compute"))      t=COMP;
       else if (line_contains("geometry"))     t=GEOM;
       else if (line_contains("fragment"))     t=FRAG;
       else if (line_contains("tes control"))  t=TESC;
       else if (line_contains("tes evaluate")) t=TESE;
-      else Debug::log_error_abort(Debug::compiler,"#shader directive must be 1 of: { vertex, compute, geometry, fragment, tes control, tes evaluate }");
+      else log_error_abort(compiler,"invalid shader preprocessing directive\n\t | #shader\n\t directive must be 1 of:\n\t 'vertex', 'compute', 'geometry', 'fragment', 'tes control', or 'tes evaluate'\n\t compilation terminated.\n");
+      log_from(code,"  _______________________________________________________________");
     }
     // else in case the line contains an include directive: dump lines from a temporary input-file-stream
     else if (line_contains("#include")) {
-      size_t start = line.find("<") + 1, last = line.find(">");
-      string includePath = "shader/" + line.substr(start, last - start) + ".glsl"; // Note: expected path: shader/ *** .glsl
-      ifstream tifs{ includePath };
+      size_t start = line.find("<") + 1;
+      size_t last  = line.find(">");
       if (start == -1 || last == -1)
-        Debug::log_error_abort(Debug::compiler,"in ",shader_file,": #include is missing bracket(s) '<' or '>'");
-      if (tifs.bad())
-        Debug::log_error_abort(Debug::compiler," in ",shader_file,": #include could not find ",includePath);
-      while (getline(tifs, line))
+        log_error_abort(compiler,"#include expects <FILENAME>\n\t ",shader_file,"\n\t ",setw(2),line_count," | ",line,"\n\t compilation terminated.\n");
+      string specified_file (line.substr(start, last - start));
+      string includePath ("shader/"+ specified_file +".glsl"); // Note expected path: shader/ *** .glsl
+      ifstream temp_input(includePath);
+      if (temp_input.fail()) {
+        log_from(code,red,setw(2),line_count++,"| ",line,'\n',reset);
+        log_error_abort(compiler,specified_file,": No such file in shader directory\n\t ",shader_file,"\n\t | #include ",red1,'<',specified_file,'>',reset,"\n\t compilation terminated.\n");
+      }
+      while (getline(temp_input, line))
       {
         ss[t] << line << "\n";
+        log_from(code,setw(2),line_count++,"| ",line); // log each line that gets input
       }
+      continue;
     }
     // else in case the line contains an end directive: stop reading the glsl file
     else if (line_contains("#end")) {
+      log_from(code);// new line
       break;
     }
     // in any other case: the line gets pushed to the source code string stream for the shader of type t
     else {
       if (t == NONE)
-        Debug::log_error_abort(Debug::compiler,"pokegl expects the first line of shader source code to be a #shader directive");
+        log_error_abort(compiler,"pokegl expects the first line of shader source code to be a #shader directive");
       ss[t] << line << "\n";
     }
-    // if compiler debug source is enabled, print each line of glsl source code as it is parsed.
-    Debug::log_from(Debug::compiler,std::setw(2),line_count++,"| ",line.c_str());
+    log_from(code,std::setw(2),line_count++,"| ",line);
   }
   // COMPILING ======================================================================================================================================
   for (GLuint i = VERT; i < 6; i++)
@@ -142,10 +154,10 @@ void compile(const int shader_id, const char* shader_file)
       );
 
       if (handles[i] == 0)
-        Debug::log_error_abort(Debug::compiler,"glCreateShader() failed");
+        log_error_abort(compiler,"call to ",cyan,"glCreateShader",reset,"() failed\n\t compilation terminated.\n");
 
       auto s = ss[i].str();
-      const char* source_code = s.c_str();
+      const char * source_code = s.c_str();
       glShaderSource(handles[i], 1, &source_code, nullptr);
       glCompileShader(handles[i]);
       glGetShaderiv(handles[i], GL_COMPILE_STATUS, &status_errno);
@@ -154,11 +166,11 @@ void compile(const int shader_id, const char* shader_file)
         glGetShaderiv(handles[i], GL_INFO_LOG_LENGTH, &log_length);
         error_log = (GLchar*)malloc(log_length);
         glGetShaderInfoLog(handles[i], log_length, nullptr, error_log);
-        error_log[strcspn(error_log,"\n")] = 0;
-        Debug::log_error_abort(Debug::compiler,str(i)," shader compilation failed. In file ",shader_file,":", error_log);
+        error_log[strcspn(error_log,"\n")]= 0;
+        log_failure(compiler,str(i)," unit did not compile\n\t ",shader_file,"\n\t ",error_log);
       }
       else
-        Debug::log_from(Debug::compiler,"compiled ",str(i)," unit successfully");
+        log_success(compiler," : ",str(i)," unit compiled");
 
       glAttachShader(shader_id, handles[i]);
     }
@@ -172,10 +184,10 @@ void compile(const int shader_id, const char* shader_file)
     error_log = (GLchar*)malloc(log_length);
     glGetProgramInfoLog(shader_id, log_length, nullptr, error_log);
     error_log[strcspn(error_log,"\0") - 1] = 0;
-    Debug::log_error_abort(Debug::compiler,"shader program failed to link.\n\n",error_log,'\n');
+    log_error_abort(compiler,"program ",pink,shader_id,reset," failed to link\n\n",error_log,'\n');
   }
   else {
-    Debug::log_from(Debug::compiler,"linked program ",shader_id," successfully");
+    log_success(compiler," : program ",pink,shader_id,reset," linked");
   }
   // CLEAN UP =======================================================================================================================================
   for (GLuint i = VERT; i < 6; i++)
@@ -198,53 +210,62 @@ const char* str(GLenum);
 const char* type(GLenum);
 void log(const int shader_id, GLenum requested_property)
 {
-  using namespace std;
+  using std::setw; using std::left; using std::right; using std::vector;
+  using namespace Debug;
 
-  auto print_active = [&shader_id, &requested_property](std::vector<GLenum> properties, int p_size)
+  // this lambda querries OpenGL shader objects for info
+  // @param properties:
+  auto print_active = [&](vector<GLenum> properties)
   {
+    if (!(shader & output_filter)) return;
+
     int num_tokens;
     glGetProgramInterfaceiv(shader_id, requested_property, GL_ACTIVE_RESOURCES, &num_tokens);
-    Debug::log_from(Debug::shader,"active ", str(requested_property)," of shader ",shader_id);
-    Debug::log_from(Debug::shader, setw(5),"<index>",setw(9),"<name>",setw(40),"<type>");
-    for(int i = 0; i < num_tokens; i++)
+    log<std::cout>("     [",pink,shader_id,reset,"] ",cyan,str(requested_property),reset,'\n',
+      "         ",setw(5),"<index>",setw(9),"<name>",setw(40),"<type>");
+    for(int i = 0; i < num_tokens; ++i)
     {
-      int* results = new int[p_size];
-      glGetProgramResourceiv(shader_id, requested_property, i, p_size, properties.data(), p_size, NULL, results);
-      int nameBufSize = results[0] + 1;
-      char* name = new char[nameBufSize];
-      glGetProgramResourceName(shader_id, requested_property, i, nameBufSize, NULL, name);
-      Debug::log_from(Debug::shader, setw(4),results[2],"       ", left,setw(40), name, type(results[1]), right);
+      int * results = new int[properties.size()];
+      glGetProgramResourceiv(shader_id, requested_property, i, properties.size(), properties.data(), properties.size(), NULL, results);
+      int size = results[0] + 1;
+      char * name = new char[size];
+      glGetProgramResourceName(shader_id, requested_property, i, size, NULL, name);
+      log<std::cout>("         ",setw(4),results[2],"       ",left,setw(40),name,blue,type(results[1]),reset,right);
       delete[] results;
       delete[] name;
     }
   };
-  switch(requested_property)
-  {
-    case GL_PROGRAM_INPUT:
-      print_active({GL_NAME_LENGTH,GL_TYPE,GL_LOCATION}, 3);
-      break;
-    case GL_UNIFORM:
-      print_active({GL_NAME_LENGTH,GL_TYPE,GL_LOCATION,GL_BLOCK_INDEX}, 4);
-      break;
+  // use the lambda above to get the following list of data
+  switch(requested_property) {
+    case GL_BUFFER_VARIABLE: log_from(shader,green,"TODO: implement gl buffer variable debug output",reset); break;
+    case GL_PROGRAM_INPUT: print_active({GL_NAME_LENGTH,GL_TYPE,GL_LOCATION}); break;
+    case GL_UNIFORM: print_active({GL_NAME_LENGTH,GL_TYPE,GL_LOCATION,GL_BLOCK_INDEX}); break;
   }
 }
 
-const char* str(GLenum e)
+void Shader::log_program_resources()
 {
-  switch(e)
-  {
-    case GL_PROGRAM_INPUT: return "vertex attributes";
-    case GL_UNIFORM:       return "uniforms";
-    default:
-      Debug::log_error_from(Debug::shader,"str(GLenum): unhandled GLenum");
-      return "???";
+  if (!(shader & output_filter)) return;
+  log_from(shader,cyan,"active",reset," program resources (",pink,handle,reset,')');
+  log(handle,GL_PROGRAM_INPUT);
+  log(handle,GL_UNIFORM);
+  log<std::cout>();
+}
+
+const char* str(GLenum gl_program_interface_enum)
+{
+  using namespace Debug;
+  switch(gl_program_interface_enum) {
+    case GL_PROGRAM_INPUT: return"vertex attributes";
+    case GL_UNIFORM:       return"uniforms";
+    default: log_error_from(shader,"in function str(GLenum): unhandled GLenum value");
+    return"<unhandled GLenum value>";
   }
 }
 
 const char* type(GLenum t)
 {
-  switch (t)
-  {
+  switch (t) {
     case GL_FLOAT:      return "float";
     case GL_FLOAT_VEC2: return "vec2";
     case GL_FLOAT_VEC3: return "vec3";
@@ -256,8 +277,9 @@ const char* type(GLenum t)
     case GL_FLOAT_MAT2: return "mat2";
     case GL_FLOAT_MAT3: return "mat3";
     case GL_FLOAT_MAT4: return "mat4";
-    case GL_SAMPLER_2D: return "sampler 2D";
-    case GL_SAMPLER_2D_ARRAY: return "sampler 2D array";
-    default: Debug::log_error_from(Debug::shader,"type(GLenum): unhandled enum"); return "???";
+    case GL_SAMPLER_2D: return "sampler2D";
+    case GL_SAMPLER_2D_ARRAY: return "sampler2DArray";
+    default: log_error_from(shader,"in function type(GLenum): unhandled gl type enum");
+    return "???";
   }
 }

@@ -1,32 +1,27 @@
 #shader vertex
 #version 460
 
-layout (location = 0) in vec3 VertexPosition;
-layout (location = 1) in vec2 VertexTexCoord;
+uniform mat4 mapsprite_mvp;
 
-out vec3 Position;
-out vec2 TexCoord;
+layout (location = 0) in vec3 vertex_position;
+layout (location = 1) in vec2 vertex_texcoord;
 
-uniform mat4 ProjectionMatrix;
-uniform mat4 MVP;
+out vec2 tex_coord; // out variables that are not flat are automatically interpolated between nearby verts
 
-void main() {
-    TexCoord = VertexTexCoord;
-    //Position = vec3(ModelViewMatrix * vec4(VertexPosition, 1.0));
-    gl_Position = MVP * vec4(VertexPosition, 1.0);
+void main()
+{
+  tex_coord = vertex_texcoord;
+  gl_Position = mapsprite_mvp * vec4(vertex_position, 1.0);
 }
-
 #shader fragment
 #version 460
 
-in vec3 Position;
-in vec2 TexCoord;
+in vec2 tex_coord;
+layout( location = 0 ) out vec4 map_frag_color;
+layout( binding = 0 ) uniform sampler2D map_tex; // the texture sampler object, requires #version 420
 
-layout( location = 0 ) out vec4 FragColor;
-
-layout( binding = 0 ) uniform sampler2D Tex1; // The texture sampler object, requires #version 420
-
-void main() {
-    FragColor = vec4(texture(Tex1,TexCoord).rgb, 1.0 );
+void main()
+{
+  map_frag_color = vec4( texture(map_tex,tex_coord).rgb, 1.0 );
 }
 #end

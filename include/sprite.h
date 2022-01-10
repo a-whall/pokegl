@@ -25,6 +25,7 @@ public:
   virtual void update(float, const Uint8*) = 0;
   virtual void render() = 0;
 
+  virtual void identify() final;
   virtual mat4 get_model() final;
   virtual void set_model(mat4 m) final;
 };

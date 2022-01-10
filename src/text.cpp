@@ -2,39 +2,44 @@
 #include <SDL_image.h>
 #include "scene.h"
 
+constexpr GLsizei char_buffer_size = 36; // number of characters in the character buffer
+
+using namespace Debug;
+
 Text_Sprite::Text_Sprite(Scene::Manager& man, Shader& s) 
 : Sprite(0.0f, 0.0f, 0.002f, *man.camera_controller, s)
 {
+  obj_identify(text,alloc,this,"Text-Lines");
   init_buffers();
   init_textures();
-//   glUseProgram(shader.handle);
-//   shader.set("frame_ID", idle_d);
-//   glUseProgram(0);
 }
+
 Text_Sprite::~Text_Sprite()
 {
-    delete char_buffer;
+  delete char_buffer;
+  obj_identify(text,dealloc,this,"Text-Lines");
 }
 
 void Text_Sprite::init_textures()
 {
   std::vector<const char*> text_sprite_paths=
   { // note: order matches ascii starting at space
-    "assets/char/sp.png",
-    "assets/char/exc.png",
-    "assets/char/quo.png",
-    "assets/char/hash.png",
-    "assets/char/dol.png",
-    "assets/char/prc.png",
-    "assets/char/amp.png",
-    "assets/char/apo.png",
-    "assets/char/lp.png",
-    "assets/char/rp.png",
-    "assets/char/ast.png",
-    "assets/char/com.png",
-    "assets/char/dash.png",
-    "assets/char/dot.png",
-    "assets/char/fs.png",
+    "assets/char/sp.png",   // 0
+    "assets/char/exc.png",  // 1
+    "assets/char/quo.png",  // 2
+    "assets/char/hash.png", // 3
+    "assets/char/dol.png",  // 4
+    "assets/char/prc.png",  // 5
+    "assets/char/amp.png",  // 6
+    "assets/char/apo.png",  // 7
+    "assets/char/lp.png",   // 8
+    "assets/char/rp.png",   // 9
+    "assets/char/ast.png",  // 10
+    "assets/char/add.png",  // 11
+    "assets/char/com.png",  // 12
+    "assets/char/dash.png", // 13
+    "assets/char/dot.png",  // 14
+    "assets/char/fs.png",   // 15
     "assets/char/0.png",
     "assets/char/1.png",
     "assets/char/2.png",
@@ -119,29 +124,27 @@ void Text_Sprite::init_textures()
     size_t
       width_pixels   = 9,
       height_pixels  = width_pixels,
-      count          = 94,
       bytes_per_pixel= 4,
       bytes_per_frame= width_pixels * height_pixels * bytes_per_pixel;
   } Texture_Info;
   constexpr Texture_Info tex_info;
   SDL_Surface * loaded_image= nullptr;
-  GLubyte * p_pixel_data= new GLubyte[tex_info.bytes_per_frame * tex_info.count];
+  GLubyte * p_pixel_data= new GLubyte[tex_info.bytes_per_frame * text_sprite_paths.size()];
   unsigned offset=0;
-  std::cout << text_sprite_paths.size() << '\n';
   glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, & this->opengl_texture_ID);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, this->opengl_texture_ID);
-  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, tex_info.width_pixels, tex_info.height_pixels, tex_info.count); // allocate GPU memory
+  glGenTextures(1, & this->t);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, this->t);
+  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, tex_info.width_pixels, tex_info.height_pixels, text_sprite_paths.size()); // allocate GPU memory
   for (const char * file_path : text_sprite_paths)
   { // Load each frame's pixel data from file into a GLubyte array
     loaded_image = IMG_Load(file_path);
     if (loaded_image == nullptr)
-      Debug::log_error_abort(Debug::text,std::hex,this,std::dec,": failed to load an animation texture:",file_path);
+      log_error_abort(text,obj_addr(this),": texture-load failed\n\t ",IMG_GetError());
     memcpy(p_pixel_data + offset, loaded_image->pixels, tex_info.bytes_per_frame);
     SDL_FreeSurface(loaded_image);
     offset += tex_info.bytes_per_frame;
   }
-  glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, tex_info.width_pixels, tex_info.height_pixels, tex_info.count, GL_RGBA, GL_UNSIGNED_BYTE, p_pixel_data); // send pixel data to GPU memory
+  glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, tex_info.width_pixels, tex_info.height_pixels, text_sprite_paths.size(), GL_RGBA, GL_UNSIGNED_BYTE, p_pixel_data); // send pixel data to GPU memory
   delete p_pixel_data; // free pixel data from heap
 
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -150,57 +153,94 @@ void Text_Sprite::init_textures()
 
 void Text_Sprite::init_buffers()
 {
-  float vbo_data[]=
-  {
-   -0.0f, 1.0f, 0.0f,      0.0f, 0.0f,
-    1.0f, 1.0f, 0.0f,      1.0f, 0.0f,
-    1.0f,-0.0f, 0.0f,      1.0f, 1.0f,
-   -0.0f,-0.0f, 0.0f,      0.0f, 1.0f
+  float vb_data[]= // non-negative unit square, slightly towards camera in the z axis
+  { // position xyz           tex coords
+    0.0f, +1.0f, -0.1f,       0.0f, 0.0f,
+   +1.0f, +1.0f, -0.1f,       1.0f, 0.0f,
+   +1.0f,  0.0f, -0.1f,       1.0f, 1.0f,
+    0.0f,  0.0f, -0.1f,       0.0f, 1.0f
   };
-  unsigned ebo_data[]=
+  unsigned eb_data[]= // standard quad element buffer
   {
     0, 1, 2,
     2, 3, 0
   };
 
-  constexpr GLsizei buffer_size = 36;
-  char_buffer= new GLint[buffer_size];
-  for (int i = 0; i < buffer_size; ++i)
-    char_buffer[i] = i + 1;
+  char_buffer= new GLint[char_buffer_size];
+  for (int i = 0; i < char_buffer_size; ++i)
+    char_buffer[i] = 0;
 
   this->n_verts= 6;
-  glGenVertexArrays(1, &this->vao);
-  glGenBuffers(1, &this->ebo);
-  glGenBuffers(1, &this->vbo);
-  glGenBuffers(1, &this->ssbo);
-  Debug::log_from(Debug::text,"specifying buffers");
-  glBindVertexArray(this->vao);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ebo_data), ebo_data, GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vbo_data), vbo_data, GL_STATIC_DRAW);
-  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, this->ssbo);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, buffer_size*sizeof(int), char_buffer, GL_DYNAMIC_DRAW); // 4 bytes per int, 36 characters in the buffer.
 
-  glEnableVertexArrayAttrib(this->vao, 0);
+  glGenVertexArrays(1, &va);
+  glGenBuffers(1, &eb);
+  glGenBuffers(1, &vb);
+  glGenBuffers(1, &ssb);
+
+  glBindVertexArray(va);
+
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eb);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(eb_data), eb_data, GL_STATIC_DRAW);
+
+  glBindBuffer(GL_ARRAY_BUFFER, vb);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vb_data), vb_data, GL_STATIC_DRAW);
+
+  glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssb);
+  glBufferData(GL_SHADER_STORAGE_BUFFER, char_buffer_size*sizeof(int), char_buffer, GL_DYNAMIC_DRAW); // 4 bytes per int, 36 characters in the buffer.
+
+  glEnableVertexArrayAttrib(va, 0);
   glVertexAttribPointer(0, 3, GL_FLOAT, false, 20, (void*)0);
-  glEnableVertexArrayAttrib(this->vao, 1);
+  glEnableVertexArrayAttrib(va, 1);
   glVertexAttribPointer(1, 2, GL_FLOAT, false, 20, (void*)12);
+
+  glBindVertexArray(0);
 }
+
+
+void Text_Sprite::set_text(const char * message)
+{
+  if (writing) {
+    log_error_from(text,"TODO: implement text message queue\n\t as it is this message will be ignored as one is text object is currently locked.\n");
+    return;
+  }
+  // update text data stored in this object
+  data = message;
+  writing = true;
+  text_counter = 0;
+}
+
 
 void Text_Sprite::update(float dt, const uint8_t * key_states)
 {
-  this->mv= cam.get_WorldToView_Matrix() * this->model;
+  if (text_counter == 0 && key_states[SDL_SCANCODE_H])
+    set_text("Hello, World!");
+
+  if (writing) { // for now text counter will correspond directly to char_buffer index
+    if (text_counter < data.length()) {
+      int i (data.at(text_counter) - 32);
+      log_from(text,"sending ",i);
+      char_buffer[text_counter] = i;
+      glBindVertexArray(va);
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb);
+      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, char_buffer_size*sizeof(int), char_buffer);
+      glBindVertexArray(0);
+      text_counter++;
+    } else {
+      writing = false;
+      text_counter = 0;
+    }
+  }
 }
 
 void Text_Sprite::render()
 {
   glUseProgram(shader.handle);
-  shader.set("mvp", cam.get_ViewToProjection_Matrix() * mv);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, this->opengl_texture_ID);
-  glBindVertexArray(vao);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, t);
+  glBindVertexArray(va);
+
   glDrawElementsInstanced(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0, 36);
+
   glBindVertexArray(0);
   glUseProgram(0);
 }

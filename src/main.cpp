@@ -2,6 +2,7 @@
 #undef main // fixes bug that prevents the program from running on windows. something to do with SDL having already defined main
 int main(int argc, char* argv[])
 {
+  using namespace Debug;
   constexpr int window_width = 960, window_height = 640; // in pixels.   3:2 aspect ratio
   constexpr int fps = 60, ms_per_frame = static_cast<int>(1000/fps + 0.5f);
   Uint32 frame_begin, dt;
@@ -16,5 +17,5 @@ int main(int argc, char* argv[])
       SDL_Delay(ms_per_frame - dt);
   }
   app.clean();
-  std::cout << "[ Exit ] " << EXIT_SUCCESS << '\n';
+  log<std::cout>("[ ",magenta,"Exit",reset," ] ",magenta,EXIT_SUCCESS,reset);
 }

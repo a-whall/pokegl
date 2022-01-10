@@ -1,6 +1,31 @@
 #include "debug.h"
+#include <sstream>
 
-void Debug::my_debug_callback(
+namespace Debug
+{
+  using std::string;
+  using std::stringstream;
+
+  // print the address of the pointer given.
+  string obj_addr(void * address)
+  {
+    stringstream ss;
+    ss << std::hex << address << std::dec;
+    return ss.str(); 
+  }
+
+  // print an alloc or dealloc message with an object source tag.
+  // there will only be output if both the source enum and object debug output is "on".
+  void obj_identify(Debug_Source_enum src, const string& header, void * ptr, const char * class_name)
+  {
+    if (src & output_filter)
+      log_from(object, header, obj_addr(ptr)," (",class_name,')');
+  }
+}
+
+
+// PokeGL debug callback to be given to OpenGL API which will use to send its own errors.
+void Debug::callback(
   GLenum e_gl_debug_source,
   GLenum e_gl_debug_type,
   GLuint id,
@@ -23,7 +48,7 @@ void Debug::my_debug_callback(
     default: source_str = "<unknown_error_source>";
   }
   switch (e_gl_debug_type) {
-    case GL_DEBUG_TYPE_ERROR:               type_str = "error: ";        break;
+    case GL_DEBUG_TYPE_ERROR:               type_str = "\033[0;31merror: \033[0m";break;
     case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR: type_str = "warning: ";      break;
     case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:  type_str = "warning: ";      break;
     case GL_DEBUG_TYPE_PORTABILITY:         type_str = "warning: ";      break;
@@ -31,7 +56,7 @@ void Debug::my_debug_callback(
     case GL_DEBUG_TYPE_MARKER:              type_str = "warning: ";      break;
     case GL_DEBUG_TYPE_PUSH_GROUP:          type_str = "warning: ";      break;
     case GL_DEBUG_TYPE_POP_GROUP:           type_str = "warning: ";      break;
-    case GL_DEBUG_TYPE_OTHER:               type_str = "notification: "; break;
+    case GL_DEBUG_TYPE_OTHER:               type_str = ""; break;
     default: type_str = "<unknown_msg_type>";
   }
   switch (e_gl_debug_severity) {
@@ -41,14 +66,19 @@ void Debug::my_debug_callback(
     case GL_DEBUG_SEVERITY_NOTIFICATION:     sev_str = "";         break;
     default: sev_str = "<unkown_error_severity_level>";
   }
-  Debug::log_error('[', source_str, "] ", type_str, msg);
+  log<cerr>('[',cyan, source_str, reset,"] ", type_str, msg);
 }
 
-void Debug::submit_debug_callback() {
+
+// register the callback with OpenGL
+void Debug::submit_debug_callback()
+{
   // Assure error message is printed upon crash
   glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+
   // Supply debug format callback function
-  glDebugMessageCallback(my_debug_callback, nullptr);
+  glDebugMessageCallback(callback, nullptr);
+
   // Config state for debug output
   glDebugMessageControl(
     GL_DONT_CARE,           // source of debug msgs to enable or disable
@@ -60,6 +90,8 @@ void Debug::submit_debug_callback() {
   );
 }
 
+
+// here is the conversion from src_enum to an actual string source tag
 const char* Debug::str(Debug_Source_enum src_enum)
 {
   switch(src_enum)
@@ -67,11 +99,13 @@ const char* Debug::str(Debug_Source_enum src_enum)
     case animation:   return "[Animat] ";
     case application: return "[Applic] ";
     case camera:      return "[Camera] ";
+    case code:        return "     ";
     case collision:   return "[Collis] ";
     case compiler:    return "[Compil] ";
     case stats:       return "[Stats ] ";
     case game:        return "[ Game ] ";
     case map:         return "[ Map  ] ";
+    case object:      return "[Object] ";
     case player:      return "[Player] ";
     case scene:       return "[Scene ] ";
     case sound:       return "[Sound ] ";

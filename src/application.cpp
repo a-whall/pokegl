@@ -155,9 +155,9 @@ void Application::print_opengl_extensions()
 {
   GLint n_extensions, i;
   glGetIntegerv(GL_NUM_EXTENSIONS, &n_extensions);
-  Debug::log("[Application] ",n_extensions," OpenGL extensions found to be implemented by this hardware");
+  Debug::log<std::cout>("[Application] ",n_extensions," OpenGL extensions found to be implemented by this hardware");
   for (i = 0; i < n_extensions; i++)
   {
-    Debug::log("\t\t",glGetStringi(GL_EXTENSIONS,i));
+    Debug::log<std::cout>("\t\t",glGetStringi(GL_EXTENSIONS,i));
   }
 }

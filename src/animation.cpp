@@ -27,8 +27,9 @@ namespace Animation
     FS * result;
     if (event_map.find(event) != event_map.end())
     {
+      // TODO: move this gl call to Player::render
       glUseProgram(shader->handle);
-      shader->set("frame_ID", event_map[event]->frame_ID);
+      shader->set("player_frame_ID", event_map[event]->frame_ID);
       glUseProgram(0);
       Debug::log_from(Debug::animation,name," -> ",event_map[event]->get_name());
       result = event_map[event];
@@ -84,6 +85,6 @@ namespace Animation
   void FSM::input(Frame_ID_enum e)
   {
     if (current_state != nullptr)                    // if current state is initialized
-      current_state= current_state->change(e,shader);  // attempt to change state (state decides whether it does or not)
+      current_state= current_state->change(e,shader);   // attempt to change state (state decides whether it does or not)
   }
 }
