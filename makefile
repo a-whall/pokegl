@@ -5,7 +5,7 @@ APPBIN = pokegl
 DEBUGBIN = debug
 
 # must manually update these lists if you create a new file
-DEP_FILES := animation.h application.h camera.h collision.h debug.h frameid.h game.h map_orientation.h map.h mapid.h player.h scene.h sfxid.h shader.h sound.h sprite.h text.h textbox.h warps.h world.h
+DEP_FILES := animation.h application.h camera.h collision.h colorstring.h debug.h frameid.h game.h map_orientation.h map.h mapid.h player.h scene.h shader.h sound.h soundid.h sprite.h text.h textbox.h warps.h world.h
 OBJ_FILES := animation.o application.o camera.o collision.o debug.o game.o map.o main.o player.o scene.o shader.o sound.o sprite.o text.o textbox.o warps.o world.o
 MAIN_OBJ_FILE := main.o
 
