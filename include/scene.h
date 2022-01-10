@@ -28,7 +28,7 @@ namespace Scene
     World_Graph * world_graph= nullptr;
     Camera * camera_controller= nullptr;
     const Uint8 * key_states= nullptr;
-    
+
     void print_objects();
     void init_camera(int, int);
     Player& new_player(Shader & s);
