@@ -8,6 +8,7 @@ class Text_Box_Sprite
 : public Sprite
 {
   GLuint va, vb, eb, t;
+  // eos flag for state tracking.
   int * char_buffer;
 
 public:

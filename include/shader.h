@@ -4,7 +4,9 @@
 #include "glm.hpp"
 #include "debug.h"
 
-enum shader_t : int { NONE = -1, VERT = 0, TESC = 1, TESE = 2, GEOM = 3, FRAG = 4, COMP = 5 };
+void compile(const int shader_id, const char* shader_file);
+
+void log(const int, GLenum);
 
 class Shader
 {
@@ -31,7 +33,3 @@ public:
   Shader* set(const char* name, const glm::mat3& m);
   Shader* set(const char* name, const glm::mat4& matrix);
 };
-
-void compile(const int shader_id, const char* shader_file);
-
-void log(const int, GLenum);

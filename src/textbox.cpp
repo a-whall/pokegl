@@ -1,6 +1,11 @@
 #include "textbox.h"
 #include <SDL_image.h>
 #include "scene.h"
+#include "texture.h"
+
+
+using namespace Debug;
+
 
 Text_Box_Sprite::Text_Box_Sprite(Scene::Manager& man, Shader& s) 
 : Sprite(0.0f, 0.0f, 0.002f, *man.camera_controller, s)
@@ -11,25 +16,23 @@ Text_Box_Sprite::Text_Box_Sprite(Scene::Manager& man, Shader& s)
 
 Text_Box_Sprite::~Text_Box_Sprite()
 {
-    delete char_buffer;
+  delete char_buffer;
 }
 
 void Text_Box_Sprite::init_texture()
 {
-  using namespace Debug;
-  SDL_Surface * image= IMG_Load("assets/textbox.png");
-  if (image == nullptr) log_error_abort(text,"textbox could not load texture");
   glActiveTexture(GL_TEXTURE0);
   glGenTextures(1, &t);
   glBindTexture(GL_TEXTURE_2D, t);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image->w, image->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->pixels);
-
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
+  int w, h;
+  GLubyte * image_data= load_textures({"assets/textbox.png"}, textbox, this, &w, &h, 4);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
   glUseProgram(shader.handle);
   shader.set("textbox_texture",0);
   glUseProgram(0);
+  delete image_data;
 }
 
 void Text_Box_Sprite::init_buffers()

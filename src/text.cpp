@@ -1,6 +1,7 @@
 #include "text.h"
 #include <SDL_image.h>
 #include "scene.h"
+#include "texture.h"
 
 constexpr GLsizei char_buffer_size = 36; // number of characters in the character buffer
 
@@ -22,7 +23,7 @@ Text_Sprite::~Text_Sprite()
 
 void Text_Sprite::init_textures()
 {
-  std::vector<const char*> text_sprite_paths=
+  std::vector<const char*> char_sprite_paths=
   { // note: order matches ascii starting at space
     "assets/char/sp.png",   // 0
     "assets/char/exc.png",  // 1
@@ -120,41 +121,22 @@ void Text_Sprite::init_textures()
     "assets/char/rc.png",
     "assets/char/tld.png"
   };
-  typedef struct {
-    size_t
-      width_pixels   = 9,
-      height_pixels  = width_pixels,
-      bytes_per_pixel= 4,
-      bytes_per_frame= width_pixels * height_pixels * bytes_per_pixel;
-  } Texture_Info;
-  constexpr Texture_Info tex_info;
-  SDL_Surface * loaded_image= nullptr;
-  GLubyte * p_pixel_data= new GLubyte[tex_info.bytes_per_frame * text_sprite_paths.size()];
-  unsigned offset=0;
   glActiveTexture(GL_TEXTURE0);
   glGenTextures(1, & this->t);
   glBindTexture(GL_TEXTURE_2D_ARRAY, this->t);
-  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, tex_info.width_pixels, tex_info.height_pixels, text_sprite_paths.size()); // allocate GPU memory
-  for (const char * file_path : text_sprite_paths)
-  { // Load each frame's pixel data from file into a GLubyte array
-    loaded_image = IMG_Load(file_path);
-    if (loaded_image == nullptr)
-      log_error_abort(text,obj_addr(this),": texture-load failed\n\t ",IMG_GetError());
-    memcpy(p_pixel_data + offset, loaded_image->pixels, tex_info.bytes_per_frame);
-    SDL_FreeSurface(loaded_image);
-    offset += tex_info.bytes_per_frame;
-  }
-  glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, tex_info.width_pixels, tex_info.height_pixels, text_sprite_paths.size(), GL_RGBA, GL_UNSIGNED_BYTE, p_pixel_data); // send pixel data to GPU memory
-  delete p_pixel_data; // free pixel data from heap
-
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  int w, h, count = char_sprite_paths.size();
+  GLubyte * image_data= load_textures(char_sprite_paths, text, this, &w, &h, 4);
+  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, w, h, count); // allocate GPU memory
+  glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, w, h, count, GL_RGBA, GL_UNSIGNED_BYTE, image_data); // send pixel data to GPU memory
+  delete image_data;
 }
 
 void Text_Sprite::init_buffers()
 {
   float vb_data[]= // non-negative unit square, slightly towards camera in the z axis
-  { // position xyz           tex coords
+  { // position x y z         tex coords
     0.0f, +1.0f, -0.1f,       0.0f, 0.0f,
    +1.0f, +1.0f, -0.1f,       1.0f, 0.0f,
    +1.0f,  0.0f, -0.1f,       1.0f, 1.0f,

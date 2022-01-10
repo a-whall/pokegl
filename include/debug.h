@@ -19,7 +19,7 @@ namespace Debug
 
   // Eventually the goal is to add these calls to every class constructor in pokegl which may be used for Application stats in the future.
   string obj_addr(void *);
-  void obj_identify(Debug_Source_enum, const string &, void *, const char *);
+  void obj_identify(Debug_Source_enum, const string &, void *, const string &);
 
 
   // OpenGL callback implementation

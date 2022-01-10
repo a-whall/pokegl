@@ -8,6 +8,7 @@
 #include "collision.h"
 #include "warps.h"
 #include "world.h"
+#include "texture.h"
 
 
 using namespace Debug;
@@ -15,23 +16,7 @@ using glm::mat4;
 using glm::mat3;
 
 
-const char* get_asset_path(Map_ID_enum mID)
-{
-  Debug::log_from(Debug::map,"getting asset path: ",to_str[mID]);
-  switch(mID)
-  {
-    case new_bark_town:     return "assets/map/new_bark_town.png";
-    case player_house_fl1:  return "assets/map/player_house_fl1.png";
-    case player_house_fl2:  return "assets/map/player_house_fl2.png";
-    case elms_lab:          return "assets/map/elms_lab.png";
-    case elms_house:        return "assets/map/elms_house.png";
-    case new_bark_house_1:  return "assets/map/nbt_house1.png";
-    case route_29:          return "assets/map/route_29.png";
-    case cherry_grove_city: return "assets/map/cherry_grove_city.png";
-    case route_30:          return "assets/map/route_30.png";
-    default:                return "file due to get_asset_path error"; // makes sense for call to SDL_GetError()
-  }
-}
+const char* get_asset_path(Map_ID_enum);
 
 
 Map::Map(Map_ID_enum mID, Camera &cam, Shader &shader)
@@ -48,7 +33,7 @@ Map::Map(Map_ID_enum mID, Camera &cam, Shader &shader)
   glUseProgram(shader.handle);
   shader.set("map_tex",0);
   glUseProgram(0);
-  translate(0, -.1875); // shift map s.t. 0,0 be the middle of the bottom-left-most tile
+  this->Map::translate(0, -.1875); // such that 0,0 becomes the middle of the bottom-left-most tile.
 }
 
 
@@ -77,17 +62,15 @@ void Map::try_to_load_texture()
     log_from(map,"has null map id, texture-load cancelled");
     return;
   }
-  SDL_Surface * loaded_image= IMG_Load(get_asset_path(current_mID));
-  if(loaded_image == nullptr) {
-    log_error_abort(map,"texture-load failed ",SDL_GetError());
-  }
-  w_tiles= (w= loaded_image->w) / 16;
-  h_tiles= (h= loaded_image->h) / 16;
-  Collision_Data::try_to_def_bounds(current_mID, w_tiles, h_tiles);
+  GLubyte * image_data= load_textures( {get_asset_path(current_mID)}, map, this, &w, &h, 3 );
+  w_tiles= w / 16;
+  h_tiles= h / 16;
+  Collision_Data::try_to_def_bounds(current_mID, w_tiles, h_tiles); // used for boundary detection
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, t);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, this->w, this->h, 0, GL_RGB, GL_UNSIGNED_BYTE, loaded_image->pixels);
-  SDL_FreeSurface(loaded_image);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, GL_RGB, GL_UNSIGNED_BYTE, image_data);
+  glBindTexture(GL_TEXTURE_2D, 0);
+  delete image_data;
 }
 
 
@@ -108,7 +91,7 @@ void Map::init_buffers()
     w2, -h2, 0.0f,       1.0f, 1.0f,
    -w2, -h2, 0.0f,       0.0f, 1.0f
   };
-  n_verts= 6; // num elements in ebo
+  n_verts= 6; // num elements in eb
   glBindVertexArray(va);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eb);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(eb_data), eb_data, GL_STATIC_DRAW);
@@ -164,7 +147,7 @@ void Map::translate(float x, float y)
 // @param mID: The map ID of the data to load.
 void Map::change(Map_ID_enum mID)
 {
-  log_from(map,"changing from ",to_str[current_mID]," to ",to_str[mID]);
+  log_from(map,obj_addr(this),": changing from ",to_str[current_mID]," to ",to_str[mID]);
 
   current_mID= mID;
 
@@ -188,4 +171,24 @@ void Map::change(Map_ID_enum mID)
 
   model= glm::translate(mat4(1.0f), vec3(hw - 0.25f, hh - 0.0625f, 0.0f));
   mv= cam.view() * model;
+}
+
+
+
+const char* get_asset_path(Map_ID_enum mID)
+{
+  log_from(map,"getting asset path: ",to_str[mID]);
+  switch(mID)
+  {
+    case new_bark_town:     return "assets/map/new_bark_town.png";
+    case player_house_fl1:  return "assets/map/player_house_fl1.png";
+    case player_house_fl2:  return "assets/map/player_house_fl2.png";
+    case elms_lab:          return "assets/map/elms_lab.png";
+    case elms_house:        return "assets/map/elms_house.png";
+    case new_bark_house_1:  return "assets/map/nbt_house1.png";
+    case route_29:          return "assets/map/route_29.png";
+    case cherry_grove_city: return "assets/map/cherry_grove_city.png";
+    case route_30:          return "assets/map/route_30.png";
+    default: return "file due to get_asset_path error"; // makes sense for call to SDL_GetError()
+  }
 }
