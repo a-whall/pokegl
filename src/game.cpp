@@ -19,7 +19,7 @@ namespace Game
     world->set_current_node(player_house_fl1);
     scene_manager.init_maps(*map_shader);
     scene_manager.new_player(*player_shader);
-    scene_manager.sound.play_song(new_bark_town);
+    scene_manager.sound.play_song(new_bark_town_mp3);
   }
 
   void Instance::on_update(float t) { /* Empty function */ }
