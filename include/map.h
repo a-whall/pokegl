@@ -7,7 +7,7 @@ class World_Node;
 class Map
 : public Sprite
 {
-  GLuint vao, vbo, ebo, current_gltexID;
+  GLuint va, vb, eb, t;
 public:
   int w=32, h=32, w_tiles=0, h_tiles=0;
   int counter=0;
