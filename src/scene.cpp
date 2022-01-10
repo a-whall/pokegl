@@ -3,6 +3,8 @@
 #include "gtc/matrix_transform.hpp"
 #include "world.h"
 
+using namespace Debug;
+
 namespace Scene
 {
   void Manager::print_objects()
@@ -62,7 +64,9 @@ namespace Scene
       maps[i2]->translate(0,0);
       maps[i2]->is_visible=true;
     };
+
     World_Node * wnode = world_graph->get_current_node();
+
     if      (wnode->up() == mID) cascade_maps(down,up);
     else if (wnode->left() == mID) cascade_maps(right,left);
     else if (wnode->down() == mID) cascade_maps(up,down);
@@ -70,12 +74,17 @@ namespace Scene
     else maps[middle]->change(mID); // this will naturally happen for non-overworld maps.
 
     World_Node * cnode = world_graph->set_current_node(mID);
+
+    // check to update music
+    if (get_area_track(cnode->mID) != get_area_track(wnode->mID))
+      sound.play_song(get_area_track(cnode->mID));
+
     Map_ID_enum m; // temp value for the ifs below
-    std::cout << "update maps:\n";
+
     if (cnode->in_overworld) {
-      Debug::log_from(Debug::scene,"cnode in overworld");
+      log_from(scene,"cnode in overworld");
       if ((m=cnode->up()) != null_map_id) {        // if the new up map has null id according to world graph:
-        std::cout << "maps[up].id: " << maps[up]->current_mID << " current_node.up().id: " << m << '\n';
+        //std::cout << "maps[up].id: " << maps[up]->current_mID << " current_node.up().id: " << m << '\n';
         if (maps[up]->current_mID != m)               // if the up map hasn't already been swapped by cascade_maps:
           maps[up]->change(m);                           // load the map
         maps[up]->translate(0,maps[middle]->h_tiles); // translate the map sprite appropriately
@@ -84,7 +93,7 @@ namespace Scene
       }
       else maps[up]->is_visible= false;         // else turn the up maps visibility off
       if ((m=cnode->left()) != null_map_id) {  // repeat
-        std::cout << "maps[left].id: " << maps[left]->current_mID << " current_node.left().id: " << m << '\n';
+        //std::cout << "maps[left].id: " << maps[left]->current_mID << " current_node.left().id: " << m << '\n';
         if (maps[left]->current_mID != m)
           maps[left]->change(m);
         maps[left]->translate(-maps[left]->w_tiles,0);
@@ -93,7 +102,7 @@ namespace Scene
       }
       else maps[left]->is_visible= false;
       if ((m=cnode->down()) != null_map_id) {
-        std::cout << "maps[down].id: " << maps[down]->current_mID << " current_node.down().id: " << m << '\n';
+        //std::cout << "maps[down].id: " << maps[down]->current_mID << " current_node.down().id: " << m << '\n';
         if (maps[down]->current_mID != m)
           maps[down]->change(m);
         maps[down]->translate(0,-maps[left]->h_tiles);
@@ -102,7 +111,7 @@ namespace Scene
       }
       else maps[down]->is_visible= false;
       if ((m=cnode->right()) != null_map_id) {
-        std::cout << "maps[right].id: " << maps[right]->current_mID << " current_node.right().id: " << m << '\n';
+        //std::cout << "maps[right].id: " << maps[right]->current_mID << " current_node.right().id: " << m << '\n';
         if (maps[right]->current_mID != m)
           maps[right]->change(m);
         maps[right]->translate(maps[middle]->w_tiles,0);
@@ -112,7 +121,7 @@ namespace Scene
       else maps[right]->is_visible= false;
     }
     else {// set neighbors invisible
-      Debug::log_from(Debug::scene,"cnode is not in overworld");
+      log_from(scene,"cnode is not in overworld");
       maps[middle]->change(mID);
       maps[up]->is_visible= maps[left]->is_visible= maps[down]->is_visible= maps[right]->is_visible= false;
     }
@@ -122,8 +131,7 @@ namespace Scene
   {
     shaders.push_back(new Shader(glCreateProgram()));
     compile(shaders.back()->handle, file_name);
-    log(shaders.back()->handle, GL_PROGRAM_INPUT);
-    log(shaders.back()->handle, GL_UNIFORM);
+    shaders.back()->log_program_resources();
     return *shaders.back();
   }
 
