@@ -19,8 +19,15 @@ Player::Player(Scene::Manager& man, Shader &s)
   fsm()
 {
   obj_identify(player,alloc,this,"Player");
-  frame_prevent_interupt_counter = info_button_delay_counter = bump_counter 
-                                 = stride_left = x_position = y_position = 0;
+
+  // initialize all member variables to 0
+  frame_prevent_interupt_counter
+  = info_button_delay_counter
+  = bump_counter 
+  = stride_left
+  = x_position
+  = y_position = 0;
+
   fsm.set_shader(&shader);
   init_buffers();
   init_animations();
