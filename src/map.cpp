@@ -9,6 +9,12 @@
 #include "warps.h"
 #include "world.h"
 
+
+using namespace Debug;
+using glm::mat4;
+using glm::mat3;
+
+
 const char* get_asset_path(Map_ID_enum mID)
 {
   Debug::log_from(Debug::map,"getting asset path: ",to_str[mID]);
@@ -27,89 +33,94 @@ const char* get_asset_path(Map_ID_enum mID)
   }
 }
 
+
 Map::Map(Map_ID_enum mID, Camera &cam, Shader &shader)
 : Sprite(0.0f, 0.0f, 0.0f, cam, shader),
   current_mID (mID)
 {
-  Debug::log_from(Debug::map,"initializing: ",std::hex,this,std::dec);
-  glGenVertexArrays(1, &this->vao);
-  glGenBuffers(1, &this->ebo);
-  glGenBuffers(1, &this->vbo);
+  obj_identify(map,alloc,this,"Map");
+  glGenVertexArrays(1, &va);
+  glGenBuffers(1, &eb);
+  glGenBuffers(1, &vb);
   init_texture();
   try_to_load_texture();
   init_buffers();
   glUseProgram(shader.handle);
   shader.set("map_tex",0);
   glUseProgram(0);
-  this->translate(0, -.1875); // shift map s.t. 0,0 be the middle of the bottom-left-most tile
+  translate(0, -.1875); // shift map s.t. 0,0 be the middle of the bottom-left-most tile
 }
+
 
 Map::~Map()
 {
-  glDeleteBuffers(1, &this->vbo);
-  glDeleteBuffers(1, &this->ebo);
-  glDeleteVertexArrays(1, &this->vao);
-  Debug::log_from(Debug::map,"deleting: ",std::hex,this,std::dec);
+  glDeleteBuffers(1, &vb);
+  glDeleteBuffers(1, &eb);
+  glDeleteVertexArrays(1, &va);
+  obj_identify(map,dealloc,this,"Map");
 }
+
 
 void Map::init_texture()
 {
-  glGenTextures(1, &this->current_gltexID);
+  glGenTextures(1, &t);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, this->current_gltexID);
+  glBindTexture(GL_TEXTURE_2D, t);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 }
 
+
 void Map::try_to_load_texture()
 {
-  if (this->current_mID == null_map_id) {
-    Debug::log_from(Debug::map,"has null map id, texture-load cancelled");
+  if (current_mID == null_map_id) {
+    log_from(map,"has null map id, texture-load cancelled");
     return;
   }
   SDL_Surface * loaded_image= IMG_Load(get_asset_path(current_mID));
   if(loaded_image == nullptr) {
-    Debug::log_error_abort(Debug::map,"texture-load failed ",SDL_GetError());
+    log_error_abort(map,"texture-load failed ",SDL_GetError());
   }
-  this->w_tiles= (this->w= loaded_image->w) / 16;
-  this->h_tiles= (this->h= loaded_image->h) / 16;
-  Debug::log_from(Debug::map,"w,h: ", w_tiles,',',h_tiles);
+  w_tiles= (w= loaded_image->w) / 16;
+  h_tiles= (h= loaded_image->h) / 16;
   Collision_Data::try_to_def_bounds(current_mID, w_tiles, h_tiles);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, this->current_gltexID);
+  glBindTexture(GL_TEXTURE_2D, t);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, this->w, this->h, 0, GL_RGB, GL_UNSIGNED_BYTE, loaded_image->pixels);
   SDL_FreeSurface(loaded_image);
 }
 
+
 void Map::init_buffers()
 {
+  // half width and half height in tiles (1 tile = 16 x 16 pixels)
   float w2 (w_tiles / 2);
   float h2 (h_tiles / 2);
-  unsigned ebo_data[]=
+  unsigned eb_data[]=
   {
     0, 1, 2,
     2, 3, 0
   };
-  float vbo_data[]= // (pos:vec3) (tex_coord:vec2)
+  float vb_data[]= // (pos:vec3) (tex_coord:vec2)
   {
    -w2,  h2, 0.0f,       0.0f, 0.0f,
     w2,  h2, 0.0f,       1.0f, 0.0f,
     w2, -h2, 0.0f,       1.0f, 1.0f,
    -w2, -h2, 0.0f,       0.0f, 1.0f
   };
-  this->n_verts= 6; // num elements in ebo
-  Debug::log_from(Debug::map,"specifying buffers");
-  glBindVertexArray(this->vao);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ebo_data), ebo_data, GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vbo_data), vbo_data, GL_DYNAMIC_DRAW);
+  n_verts= 6; // num elements in ebo
+  glBindVertexArray(va);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eb);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(eb_data), eb_data, GL_STATIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, vb);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vb_data), vb_data, GL_DYNAMIC_DRAW);
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, false, 20, (void*)0);
   glEnableVertexAttribArray(1);
   glVertexAttribPointer(1, 2, GL_FLOAT, false, 20, (void*)12);
   glBindVertexArray(0);
 }
+
 
 void Map::update(float t, const Uint8* keystates)
 {
@@ -119,22 +130,25 @@ void Map::update(float t, const Uint8* keystates)
     counter = 16;
     log_from(map,std::hex,this,std::dec,": (",model[3].x,",",model[3].y,")");
   }
-  if (counter > 0) --counter;
+  if (counter > 0)
+    --counter;
 }
+
 
 void Map::render()
 {
   if (this->is_visible) {
     glUseProgram(shader.handle);
-    shader.set("mvp", cam.projection() * this->mv);
+    shader.set("mapsprite_mvp", cam.projection() * mv);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, this->current_gltexID);
-    glBindVertexArray(this->vao);
-    glDrawElements(GL_TRIANGLES, this->n_verts, GL_UNSIGNED_INT, 0);
+    glBindTexture(GL_TEXTURE_2D, t);
+    glBindVertexArray(va);
+    glDrawElements(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
     glUseProgram(0);
   }
 }
+
 
 // Translates the model of this map object in the x-y plane. This function overwrites the model matrix with the result of an identity matrix that has been translated by the given offsets, therefore any previous translations will be overwritten.
 // @param x,y: shift the model matrix by this many units in the x and y directions respectively.
@@ -142,29 +156,36 @@ void Map::translate(float x, float y)
 {
   float hw (this->w_tiles / 2);
   float hh (this->h_tiles / 2);
-  model= glm::translate(glm::mat4(1.0f), glm::vec3(hw + x - 0.25f, hh + y - 0.0625f, 0.0f));
+  model= glm::translate(mat4(1.0f), vec3(hw + x - 0.25f, hh + y - 0.0625f, 0.0f));
 }
+
 
 // Transform this map to load data for a new zone.
 // @param mID: The map ID of the data to load.
 void Map::change(Map_ID_enum mID)
 {
-  Debug::log_from(Debug::map,"changing from ",to_str[current_mID]," to ",to_str[mID]);
+  log_from(map,"changing from ",to_str[current_mID]," to ",to_str[mID]);
+
   current_mID= mID;
+
   try_to_load_texture();
+
   float hw (this->w_tiles / 2);
   float hh (this->h_tiles / 2);
-  float vbo_data[]=
+
+  float vb_data[]=
   {// XYZ Position       TexCoords
-   -hw,  hh, 0.0f,       0.0f, 0.0f,
-    hw,  hh, 0.0f,       1.0f, 0.0f,
-    hw, -hh, 0.0f,       1.0f, 1.0f,
+   -hw, +hh, 0.0f,       0.0f, 0.0f,
+   +hw, +hh, 0.0f,       1.0f, 0.0f,
+   +hw, -hh, 0.0f,       1.0f, 1.0f,
    -hw, -hh, 0.0f,       0.0f, 1.0f
   };
-  glBindVertexArray(this->vao);
-  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vbo_data), vbo_data);
+
+  glBindVertexArray(va);
+  glBindBuffer(GL_ARRAY_BUFFER, vb);
+  glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vb_data), vb_data);
   glBindVertexArray(0);
-  this->model= glm::translate(glm::mat4(1.0f), glm::vec3(hw - 0.25f, hh - 0.0625f, 0.0f));
-  this->mv= cam.view() * this->model;
+
+  model= glm::translate(mat4(1.0f), vec3(hw - 0.25f, hh - 0.0625f, 0.0f));
+  mv= cam.view() * model;
 }
