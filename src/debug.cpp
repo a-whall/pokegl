@@ -16,7 +16,7 @@ namespace Debug
 
   // print an alloc or dealloc message with an object source tag.
   // there will only be output if both the source enum and object debug output is "on".
-  void obj_identify(Debug_Source_enum src, const string& header, void * ptr, const char * class_name)
+  void obj_identify(Debug_Source_enum src, const string& header, void * ptr, const string& class_name)
   {
     if (src & output_filter)
       log_from(object, header, obj_addr(ptr)," (",class_name,')');
