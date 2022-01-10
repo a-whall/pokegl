@@ -22,7 +22,7 @@ constexpr const char * cyan1   = "\033[36;1m";
 constexpr const char * white1  = "\033[37;1m";
 
 constexpr const char * redb    = "\033[37;41;1m";
-constexpr const char * greenb  = "\033[37;42;1;2m";
+constexpr const char * greenb  = "\033[37;42;1m";
 
 
 // yellow alloc and dealloc message strings
