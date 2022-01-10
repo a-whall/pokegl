@@ -1,7 +1,7 @@
 #shader vertex
 #version 460
 
-uniform mat4 mvp;
+uniform mat4 mapsprite_mvp;
 
 layout (location = 0) in vec3 vertex_position;
 layout (location = 1) in vec2 vertex_texcoord;
@@ -11,7 +11,7 @@ out vec2 tex_coord; // out variables that are not flat are automatically interpo
 void main()
 {
   tex_coord = vertex_texcoord;
-  gl_Position = mvp * vec4(vertex_position, 1.0);
+  gl_Position = mapsprite_mvp * vec4(vertex_position, 1.0);
 }
 #shader fragment
 #version 460
