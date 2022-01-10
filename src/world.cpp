@@ -2,16 +2,19 @@
 #include <iostream>
 #include "debug.h"
 #include "collision.h"
+#include "sound.h"
+
+using namespace Debug;
 
 World_Node::World_Node(Map_ID_enum map_ID)
 : mID(map_ID)
 {
-  Debug::log_from(Debug::world,"initializing: ",std::hex,this,std::dec," (node) ",to_str[this->mID]);
+  // object identification handled by World Graph
 };
 
 World_Node::~World_Node()
 {
-  Debug::log_from(Debug::world,"deleting: ",std::hex,this,std::dec," (node) ",to_str[this->mID]);
+  // object identification handled by World Graph
 }
 
 void World_Node::set_neighbors(Map_ID_enum up, Map_ID_enum left, Map_ID_enum down, Map_ID_enum right)
@@ -30,12 +33,20 @@ Map_ID_enum World_Node::left()  { return neighbors[1]; }
 Map_ID_enum World_Node::down()  { return neighbors[2]; }
 Map_ID_enum World_Node::right() { return neighbors[3]; }
 
+
+
 World_Graph::World_Graph()
 {
-  Debug::log_from(Debug::world,"initializing: ",std::hex,this,std::dec," (graph)");
+  obj_identify(world,alloc,this,"Graph");
+
   // construct full set of nodes, a node for all static Map_ID values.
   for (std::uint8_t i = 1U; i < max_map_id; ++i)
-    world_map[static_cast<Map_ID_enum>(i)] = new World_Node(static_cast<Map_ID_enum>(i));
+  {
+    Map_ID_enum m = static_cast<Map_ID_enum>(i);
+    world_map[m] = new World_Node(m);
+    if (world & output_filter)
+      log<std::cout>("\t      : ",obj_addr(world_map[m])," (node) ",to_str[world_map[m]->mID]);
+  }
   // build adjacency list for overworld maps
   world_map[new_bark_town]->set_neighbors(null_map_id, route_29, null_map_id, null_map_id); // TODO: fix neighbors. set to nullmid for testing
   world_map[route_29]->set_neighbors(null_map_id, cherry_grove_city, null_map_id, new_bark_town); // TODO: fix neighbors. set to nullmid for testing
@@ -69,16 +80,22 @@ World_Graph::World_Graph()
 
 World_Graph::~World_Graph()
 {
-  for (auto& node : world_map)
+  if (world & output_filter) log_from(object,"dealloc:");
+  for (auto& node : world_map) {
+    if (world & output_filter)
+      log<cout>("\t\t: ",obj_addr(node.second)," (node) ",to_str[node.second->mID]);
     delete node.second;
-  Debug::log_from(Debug::world,"deleting: ",std::hex,this,std::dec," (graph)");
+  }
+  obj_identify(world,dealloc,this,"Graph");
 }
 
 World_Node * World_Graph::set_current_node(Map_ID_enum mID)
 {
-  if ( (this->current_node= this->get_node(mID)) == nullptr )
-    Debug::log_error_abort(Debug::world,"failed to set current node. get_node(",to_str[mID],") returned nullptr");
-  return this->current_node;
+  World_Node * next = get_node(mID);
+  if (next == nullptr)
+    log_error_abort(world,"failed to set current node. get_node(",to_str[mID],") returned nullptr");
+  current_node = next;
+  return current_node;
 }
 
 World_Node* World_Graph::get_current_node()
