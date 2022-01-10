@@ -1,4 +1,3 @@
-#pragma dfjsf
 #include "shader.h"
 #include <sstream>
 #include <fstream>
@@ -9,13 +8,13 @@ using namespace Debug;
 
 Shader::Shader(GLuint gl_program_ID)
 {
-  log_from(shader,"initializing: ",std::hex,this,std::dec," (program) ",gl_program_ID);
+  obj_identify(shader,alloc,this,"Shader");
   handle = gl_program_ID;
 }
 
 Shader::~Shader()
 {
-  log_from(shader,"deleting: ",std::hex,this,std::dec," (program) ",handle);
+  obj_identify(shader,dealloc,this,"Shader");
   glDeleteProgram(handle);
 }
 
@@ -29,13 +28,13 @@ int Shader::get_uniform_location(const char *name)
 
   int location = glGetUniformLocation(handle, name);
   if (location == -1) {
-    Debug::log_error_from(Debug::shader,"cache warning: '",name,"' is not an active uniform,",
-    " it either doesn't exist or the OpenGL compiler optimized it out of program ",handle);
+  log_error_from(shader,"cache warning\n\t | \"",red,name,reset,"\" is not an active ",cyan,"uniform ",reset,
+    "of program ",pink,handle,reset,",\n\t it doesn't exist or the ",cyan,"OpenGL Compiler",reset," has optimized it out of the shader executable.\n");
     nonexistent_uniform_list[name]= -1;
   }
   else {
     uniform_location_map[name]= location;
-    Debug::log_from(Debug::shader,"program ",handle," uniform variable '",name,"' location has been cached");
+    log_from(shader,pink,handle,reset,':',cyan," uniform ",reset,'\"',white1,name,reset,"\" location ",green,"cached",reset);
   }
   return location;
 }
@@ -91,10 +90,10 @@ void compile(const int shader_id, const char* shader_file)
   };
 
   // PRE COMPILING ==================================================================================================================================
-  log_from(compiler,"parsing shader source code from: ", shader_file);
+  log_from(code,"parsing: ",white, shader_file,reset);
   while (getline(input_stream, line))
   {
-    // try to parse shader directive (Note: required to write to the correct string stream)
+    // try to parse shader directive (Note: this directive is required to write to the correct string stream)
     if (line_contains("#shader")) {
       line_count= 0; // reset line count
       if      (line_contains("vertex"))       t=VERT;
@@ -111,13 +110,13 @@ void compile(const int shader_id, const char* shader_file)
       size_t start = line.find("<") + 1;
       size_t last  = line.find(">");
       if (start == -1 || last == -1)
-        log_error_abort(compiler,"in ",shader_file,": #include is missing bracket(s) '<' or '>'");
+        log_error_abort(compiler,"#include expects <FILENAME>\n\t ",shader_file,"\n\t ",setw(2),line_count," | ",line,"\n\t compilation terminated.\n");
       string specified_file (line.substr(start, last - start));
       string includePath ("shader/"+ specified_file +".glsl"); // Note expected path: shader/ *** .glsl
       ifstream temp_input(includePath);
       if (temp_input.fail()) {
         log_from(code,red,setw(2),line_count++,"| ",line,'\n',reset);
-        log_error_abort(compiler,specified_file,": No such file in shader directory\n\t ",shader_file,"\n\t | #include ",red,'<',specified_file,'>',reset,"\n\t compilation terminated.\n");
+        log_error_abort(compiler,specified_file,": No such file in shader directory\n\t ",shader_file,"\n\t | #include ",red1,'<',specified_file,'>',reset,"\n\t compilation terminated.\n");
       }
       while (getline(temp_input, line))
       {
@@ -155,10 +154,10 @@ void compile(const int shader_id, const char* shader_file)
       );
 
       if (handles[i] == 0)
-        log_error_abort(compiler,"glCreateShader() failed");
+        log_error_abort(compiler,"call to ",cyan,"glCreateShader",reset,"() failed\n\t compilation terminated.\n");
 
       auto s = ss[i].str();
-      const char* source_code = s.c_str();
+      const char * source_code = s.c_str();
       glShaderSource(handles[i], 1, &source_code, nullptr);
       glCompileShader(handles[i]);
       glGetShaderiv(handles[i], GL_COMPILE_STATUS, &status_errno);
@@ -168,10 +167,10 @@ void compile(const int shader_id, const char* shader_file)
         error_log = (GLchar*)malloc(log_length);
         glGetShaderInfoLog(handles[i], log_length, nullptr, error_log);
         error_log[strcspn(error_log,"\n")]= 0;
-        log_error_abort(compiler,str(i)," shader compilation failed. In file ",shader_file,":", error_log);
+        log_failure(compiler,str(i)," unit did not compile\n\t ",shader_file,"\n\t ",error_log);
       }
       else
-        log_from(compiler,"compiled ",str(i)," unit successfully");
+        log_success(compiler," : ",str(i)," unit compiled");
 
       glAttachShader(shader_id, handles[i]);
     }
@@ -185,10 +184,10 @@ void compile(const int shader_id, const char* shader_file)
     error_log = (GLchar*)malloc(log_length);
     glGetProgramInfoLog(shader_id, log_length, nullptr, error_log);
     error_log[strcspn(error_log,"\0") - 1] = 0;
-    Debug::log_error_abort(Debug::compiler,"shader program failed to link.\n\n",error_log,'\n');
+    log_error_abort(compiler,"program ",pink,shader_id,reset," failed to link\n\n",error_log,'\n');
   }
   else {
-    Debug::log_from(Debug::compiler,"linked program ",shader_id," successfully");
+    log_success(compiler," : program ",pink,shader_id,reset," linked");
   }
   // CLEAN UP =======================================================================================================================================
   for (GLuint i = VERT; i < 6; i++)
@@ -218,10 +217,12 @@ void log(const int shader_id, GLenum requested_property)
   // @param properties:
   auto print_active = [&](vector<GLenum> properties)
   {
+    if (!(shader & output_filter)) return;
+
     int num_tokens;
     glGetProgramInterfaceiv(shader_id, requested_property, GL_ACTIVE_RESOURCES, &num_tokens);
-    log_from(shader,"active ",str(requested_property)," of shader ",shader_id);
-    log_from(shader,setw(5),"<index>",setw(9),"<name>",setw(40),"<type>");
+    log<std::cout>("     [",pink,shader_id,reset,"] ",cyan,str(requested_property),reset,'\n',
+      "         ",setw(5),"<index>",setw(9),"<name>",setw(40),"<type>");
     for(int i = 0; i < num_tokens; ++i)
     {
       int * results = new int[properties.size()];
@@ -229,16 +230,26 @@ void log(const int shader_id, GLenum requested_property)
       int size = results[0] + 1;
       char * name = new char[size];
       glGetProgramResourceName(shader_id, requested_property, i, size, NULL, name);
-      log_from(shader,setw(4),results[2],"       ",left,setw(40),name,type(results[1]),right);
+      log<std::cout>("         ",setw(4),results[2],"       ",left,setw(40),name,blue,type(results[1]),reset,right);
       delete[] results;
       delete[] name;
     }
   };
   // use the lambda above to get the following list of data
   switch(requested_property) {
+    case GL_BUFFER_VARIABLE: log_from(shader,green,"TODO: implement gl buffer variable debug output",reset); break;
     case GL_PROGRAM_INPUT: print_active({GL_NAME_LENGTH,GL_TYPE,GL_LOCATION}); break;
     case GL_UNIFORM: print_active({GL_NAME_LENGTH,GL_TYPE,GL_LOCATION,GL_BLOCK_INDEX}); break;
   }
+}
+
+void Shader::log_program_resources()
+{
+  if (!(shader & output_filter)) return;
+  log_from(shader,cyan,"active",reset," program resources (",pink,handle,reset,')');
+  log(handle,GL_PROGRAM_INPUT);
+  log(handle,GL_UNIFORM);
+  log<std::cout>();
 }
 
 const char* str(GLenum gl_program_interface_enum)
@@ -266,9 +277,9 @@ const char* type(GLenum t)
     case GL_FLOAT_MAT2: return "mat2";
     case GL_FLOAT_MAT3: return "mat3";
     case GL_FLOAT_MAT4: return "mat4";
-    case GL_SAMPLER_2D: return "sampler 2D";
-    case GL_SAMPLER_2D_ARRAY: return "sampler 2D array";
-    default: Debug::log_error_from(Debug::shader,"in function type(GLenum): unhandled gl type enum");
+    case GL_SAMPLER_2D: return "sampler2D";
+    case GL_SAMPLER_2D_ARRAY: return "sampler2DArray";
+    default: log_error_from(shader,"in function type(GLenum): unhandled gl type enum");
     return "???";
   }
 }
