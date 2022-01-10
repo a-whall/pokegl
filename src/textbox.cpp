@@ -22,24 +22,24 @@ void Text_Box_Sprite::init_texture()
   glActiveTexture(GL_TEXTURE0);
   glGenTextures(1, &t);
   glBindTexture(GL_TEXTURE_2D, t);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, image->w, image->h, 0, GL_RGB, GL_UNSIGNED_BYTE, image->pixels);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image->w, image->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image->pixels);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
   glUseProgram(shader.handle);
-  shader.set("text_box_texture",0);
+  shader.set("textbox_texture",0);
   glUseProgram(0);
 }
 
 void Text_Box_Sprite::init_buffers()
 {
   float vb_data[]=
-  {
-   -0.5f, 0.5f, 0.0f,      0.0f, 0.0f,
-   +0.5f, 0.5f, 0.0f,      1.0f, 0.0f,
-   +0.5f,-0.5f, 0.0f,      1.0f, 1.0f,
-   -0.5f,-0.5f, 0.0f,      0.0f, 1.0f
+  {// (position:vec3)      (texture coordinates:vec2)
+   -1.0f, -0.2f, 0.0f,      0.0f, 0.0f,
+   +1.0f, -0.2f, 0.0f,      1.0f, 0.0f,
+   +1.0f, -1.0f, 0.0f,      1.0f, 1.0f,
+   -1.0f, -1.0f, 0.0f,      0.0f, 1.0f
   };
   unsigned eb_data[]=
   {
@@ -64,13 +64,12 @@ void Text_Box_Sprite::init_buffers()
 
 void Text_Box_Sprite::update(float dt, const uint8_t * key_states)
 {
-  mv= cam.view() * model;
+  SDL_Event e;
 }
 
 void Text_Box_Sprite::render()
 {
   glUseProgram(shader.handle);
-  shader.set("mvp", cam.projection() * mv);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, t);
   glBindVertexArray(va);
