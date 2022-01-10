@@ -19,6 +19,8 @@ public:
   Shader(GLuint);
   ~Shader();
 
+  void log_program_resources();
+
   Shader* set(const char* name, int i);
   Shader* set(const char* name, bool b);
   Shader* set(const char* name, float f);
