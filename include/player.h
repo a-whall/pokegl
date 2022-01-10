@@ -12,9 +12,9 @@ namespace Scene {
 class Player
 : public Sprite
 {
-  GLuint vao,  vbo,  ebo,  opengl_texture_ID;
+  GLuint vao,  vbo,  ebo,  t;
   Animation::FSM fsm;
-  int frame_prevent_interupt_counter, info_button_delay_counter, stride_left;
+  int frame_prevent_interupt_counter, info_button_delay_counter, bump_counter, stride_left;
   const Warp::Destination * pending_warp = nullptr;
   Scene::Manager & scene_manager;
 public:
