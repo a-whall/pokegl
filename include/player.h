@@ -5,14 +5,12 @@
 #include "warps.h"
 #include "world.h"
 
-namespace Scene {
-  class Manager;
-}
+namespace Scene { class Manager; }
 
 class Player
 : public Sprite
 {
-  GLuint vao,  vbo,  ebo,  t;
+  GLuint va, vb, eb, t;
   Animation::FSM fsm;
   int frame_prevent_interupt_counter, info_button_delay_counter, bump_counter, stride_left;
   const Warp::Destination * pending_warp = nullptr;
@@ -26,7 +24,7 @@ public:
   void init_buffers() override;
   void update(float, const Uint8 *) override;
   void render() override;
-  void set_position(int, int);
+  void set_position(Point p);
   void set_position(const Warp::Destination&); // maybe use Point as arg instead
   void start_animation();
 private:

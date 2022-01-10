@@ -1,22 +1,42 @@
 #include "shader.h"
 #include <sstream>
+using std::stringstream;
+
 #include <fstream>
+using std::ifstream;
+
 #include <iomanip>
+using std::setw;
+using std::left;
+using std::right;
+
 #include <cstring>
+using std::string;
+
+#include <vector>
+using std::vector;
 
 using namespace Debug;
 
+
+
 Shader::Shader(GLuint gl_program_ID)
 {
-  obj_identify(shader,alloc,this,"Shader");
+  stringstream name;
+  name << "Shader:" << pink << gl_program_ID << reset;
+  obj_identify(shader,alloc,this,name.str());
   handle = gl_program_ID;
 }
+
+
 
 Shader::~Shader()
 {
   obj_identify(shader,dealloc,this,"Shader");
   glDeleteProgram(handle);
 }
+
+
 
 int Shader::get_uniform_location(const char *name)
 {
@@ -39,6 +59,8 @@ int Shader::get_uniform_location(const char *name)
   return location;
 }
 
+
+
 Shader* Shader::set(const char* name, int i)                  { glUniform1i(get_uniform_location(name), i);                                 return this; }
 Shader* Shader::set(const char* name, bool b)                 { glUniform1i(get_uniform_location(name), (int)b);                            return this; }
 Shader* Shader::set(const char* name, float f)                { glUniform1f(get_uniform_location(name), f);                                 return this; }
@@ -55,9 +77,15 @@ Shader* Shader::set(const char* name, const glm::mat4& matrix){ glUniformMatrix4
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+// this enum is used exclusively by the compile function to determine which shaders code it is currently parsing.
+enum shader_t : int { NONE = -1, VERT = 0, TESC = 1, TESE = 2, GEOM = 3, FRAG = 4, COMP = 5 };
+
+
+
 void compile(const int shader_id, const char* shader_file)
 {
-  using namespace std;
   using namespace Debug;
 
   // compiler state variables
@@ -136,7 +164,7 @@ void compile(const int shader_id, const char* shader_file)
         log_error_abort(compiler,"pokegl expects the first line of shader source code to be a #shader directive");
       ss[t] << line << "\n";
     }
-    log_from(code,std::setw(2),line_count++,"| ",line);
+    log_from(code,setw(2),line_count++,"| ",line);
   }
   // COMPILING ======================================================================================================================================
   for (GLuint i = VERT; i < 6; i++)
@@ -206,13 +234,12 @@ void compile(const int shader_id, const char* shader_file)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
 const char* str(GLenum);
 const char* type(GLenum);
 void log(const int shader_id, GLenum requested_property)
 {
-  using std::setw; using std::left; using std::right; using std::vector;
-  using namespace Debug;
-
   // this lambda querries OpenGL shader objects for info
   // @param properties:
   auto print_active = [&](vector<GLenum> properties)
@@ -221,7 +248,7 @@ void log(const int shader_id, GLenum requested_property)
 
     int num_tokens;
     glGetProgramInterfaceiv(shader_id, requested_property, GL_ACTIVE_RESOURCES, &num_tokens);
-    log<std::cout>("     [",pink,shader_id,reset,"] ",cyan,str(requested_property),reset,'\n',
+    log<cout>("     [",pink,shader_id,reset,"] ",cyan,str(requested_property),reset,'\n',
       "         ",setw(5),"<index>",setw(9),"<name>",setw(40),"<type>");
     for(int i = 0; i < num_tokens; ++i)
     {
@@ -230,7 +257,7 @@ void log(const int shader_id, GLenum requested_property)
       int size = results[0] + 1;
       char * name = new char[size];
       glGetProgramResourceName(shader_id, requested_property, i, size, NULL, name);
-      log<std::cout>("         ",setw(4),results[2],"       ",left,setw(40),name,blue,type(results[1]),reset,right);
+      log<cout>("         ",setw(4),results[2],"       ",left,setw(40),name,blue,type(results[1]),reset,right);
       delete[] results;
       delete[] name;
     }
@@ -243,18 +270,23 @@ void log(const int shader_id, GLenum requested_property)
   }
 }
 
+
+
+// This function is silenced when shader debug output is not enabled.
 void Shader::log_program_resources()
 {
-  if (!(shader & output_filter)) return;
+  if (!(shader & output_filter))
+    return;
   log_from(shader,cyan,"active",reset," program resources (",pink,handle,reset,')');
   log(handle,GL_PROGRAM_INPUT);
   log(handle,GL_UNIFORM);
-  log<std::cout>();
+  log<cout>();
 }
+
+
 
 const char* str(GLenum gl_program_interface_enum)
 {
-  using namespace Debug;
   switch(gl_program_interface_enum) {
     case GL_PROGRAM_INPUT: return"vertex attributes";
     case GL_UNIFORM:       return"uniforms";
@@ -262,6 +294,8 @@ const char* str(GLenum gl_program_interface_enum)
     return"<unhandled GLenum value>";
   }
 }
+
+
 
 const char* type(GLenum t)
 {

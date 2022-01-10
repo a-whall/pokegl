@@ -1,13 +1,17 @@
 #include "player.h"
-#include <SDL_image.h> // IMG_Load
 #include <gtc/matrix_transform.hpp>
 #include "camera.h"
 #include "frameid.h"
 #include "collision.h"
 #include "warps.h"
 #include "scene.h"
+#include "texture.h"
+
+
 
 using namespace Debug;
+
+
 
 // Player constructor : Initialize a bunch of player state values. Starts the player facing down.
 // @param cam: a reference to the scene camera
@@ -36,36 +40,27 @@ Player::Player(Scene::Manager& man, Shader &s)
   glUseProgram(0);
 }
 
+
+
 // Player destructor : Delete all OpenGL objects associated with this player sprite
 Player::~Player()
 {
-  glDeleteBuffers(1, &vbo);
-  glDeleteBuffers(1, &ebo);
-  glDeleteVertexArrays(1, &vao);
+  glDeleteBuffers(1, &vb);
+  glDeleteBuffers(1, &eb);
+  glDeleteVertexArrays(1, &va);
   glDeleteTextures(1, &t);
   obj_identify(player,dealloc,this,"Player");
 }
+
+
 
 // Frames are loaded using IMG_Load() from the SDL_image library. This function creates an OpenGL texture2D_array texture object which is intended to be cleaned up by the player destructor.
 // @warning: the IMG_INIT_PNG flag must be passed to the SDL function IMG_INIT in order to load the png files used for these animation frames.
 void Player::init_animations()
 {
-  typedef struct {
-    size_t
-      width_pixels   = 16,
-      height_pixels  = width_pixels,
-      count          = 10,
-      bytes_per_pixel= 4,
-      bytes_per_frame= width_pixels * height_pixels * bytes_per_pixel;
-  } Frame_Info;
-
-  SDL_Surface * loaded_image= nullptr;
-  constexpr Frame_Info f_info;
-  GLubyte * p_pixel_data= new GLubyte[f_info.bytes_per_frame * f_info.count];
-  unsigned offset= 0;
-
+  // note: order matches Frame_ID enum
   std::vector<const char*> frames=
-  { // note: order matches Frame_ID enum
+  {
     "assets/sprite/player/backward_idle.png",
     "assets/sprite/player/left_idle.png",
     "assets/sprite/player/forward_idle.png",
@@ -78,32 +73,26 @@ void Player::init_animations()
     "assets/sprite/player/right_stride.png"
   };
 
-  glActiveTexture(GL_TEXTURE0); // specify which GL_TEXTURE unit subsequent texture state calls will affect
+  // Initialize OpenGL texture object
+  glActiveTexture(GL_TEXTURE0);
   glGenTextures(1, &t);
   glBindTexture(GL_TEXTURE_2D_ARRAY, t);
-
-  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, f_info.width_pixels, f_info.height_pixels, f_info.count); // allocate GPU memory
-  for (const char * file_path : frames)
-  { // Load each frame's pixel data from file into a GLubyte array
-    loaded_image = IMG_Load(file_path);
-    if (loaded_image == nullptr)
-      log_error_abort(player,obj_addr(this),": texture-load failed\n\t ",
-        white,file_path,reset,"\n\t ", IMG_GetError());
-    memcpy(p_pixel_data + offset, loaded_image->pixels, f_info.bytes_per_frame);
-    SDL_FreeSurface(loaded_image);
-    offset += f_info.bytes_per_frame;
-  }
-  glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, f_info.width_pixels, f_info.height_pixels, f_info.count, GL_RGBA, GL_UNSIGNED_BYTE, p_pixel_data); // send pixel data to GPU memory
-  delete p_pixel_data; // free pixel data from heap
-
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
+  // Upload animation frame data to GPU
+  int w, h, bytes_per_pixel= 4, count = frames.size();
+  GLubyte * image_data= load_textures(frames, player, this, &w, &h, bytes_per_pixel);
+  glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, w, h, count); // allocate GPU memory
+  glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, w, h, count, GL_RGBA, GL_UNSIGNED_BYTE, image_data); // send pixel data to GPU
+  delete image_data; // free pixel data from heap
+
+  // Initialize the frame state model and their associations
   fsm
-   .create_state("player_idle_down"   , idle_d,    { idle_l,idle_r,idle_u,stride_d2,stride_d1 })
-   .create_state("player_idle_up"     , idle_u,    { idle_l,idle_r,idle_d,stride_u1,stride_u2 })
-   .create_state("player_idle_right"  , idle_r,    { idle_l,idle_u,idle_d,stride_r1 })
-   .create_state("player_idle_left"   , idle_l,    { idle_r,idle_u,idle_d,stride_l1 })
+   .create_state("player_idle_down"   , idle_d,    { idle_l, idle_r, idle_u, stride_d2, stride_d1 })
+   .create_state("player_idle_up"     , idle_u,    { idle_l, idle_r, idle_d, stride_u1, stride_u2 })
+   .create_state("player_idle_right"  , idle_r,    { idle_l, idle_u, idle_d, stride_r1 })
+   .create_state("player_idle_left"   , idle_l,    { idle_r, idle_u, idle_d, stride_l1 })
    .create_state("player_stride_left" , stride_l1, { idle_l })
    .create_state("player_stride_right", stride_r1, { idle_r })
    .create_state("player_stride_down1", stride_d1, { idle_d })
@@ -112,48 +101,52 @@ void Player::init_animations()
    .create_state("player_stride_up2"  , stride_u2, { idle_u });
 }
 
+
+
 // This function declares VBO and EBO data temporarily on stack and sends it to the GPU. VBO and EBO data will not change for the duration of the program. VBO data represents model coordinates of the player texture, i.e. a 1x1 quad centered on origin, as well as texture coordinates for texture mapping which is handled by OpenGL. EBO data represents the order in which vertices in the VBO are to be drawn to make triangles by the OpenGL draw calls.
 void Player::init_buffers()
 {
-  float vbo_data[]=
+  float vb_data[]=
   {
    -0.5f, 0.5f, 0.0f,      0.0f, 0.0f,
     0.5f, 0.5f, 0.0f,      1.0f, 0.0f,
     0.5f,-0.5f, 0.0f,      1.0f, 1.0f,
    -0.5f,-0.5f, 0.0f,      0.0f, 1.0f
   };
-  unsigned ebo_data[]=
+  unsigned eb_data[]=
   {
     0, 1, 2,
     2, 3, 0
   };
-  this->n_verts= 6;
-  glGenVertexArrays(1, &this->vao);
-  glGenBuffers(1, &this->ebo);
-  glGenBuffers(1, &this->vbo);
-  Debug::log_from(Debug::player,"specifying buffers");
-  glBindVertexArray(this->vao);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, this->ebo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(ebo_data), ebo_data, GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, this->vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vbo_data), vbo_data, GL_STATIC_DRAW);
-  glEnableVertexArrayAttrib(this->vao, 0);
+  n_verts= 6;
+  glGenVertexArrays(1, &va);
+  glGenBuffers(1, &eb);
+  glGenBuffers(1, &vb);
+  log_from(player,"specifying buffers");
+  glBindVertexArray(va);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eb);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(eb_data), eb_data, GL_STATIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, vb);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(vb_data), vb_data, GL_STATIC_DRAW);
+  glEnableVertexArrayAttrib(va, 0);
   glVertexAttribPointer(0, 3, GL_FLOAT, false, 20, (void*)0);
-  glEnableVertexArrayAttrib(this->vao, 1);
+  glEnableVertexArrayAttrib(va, 1);
   glVertexAttribPointer(1, 2, GL_FLOAT, false, 20, (void*)12);
   glBindVertexArray(0);
 }
 
- // Indefinitely updates the players model-view matrix using the camera's view matrix. Then checks whether to continue executing an animation phase or to accept and process input.
- // @param t: the intended duration of 1 frame of the application
- // @param key_states: a pointer to SDL pressed keys data
+
+
+// Indefinitely updates the players model-view matrix using the camera's view matrix. Then checks whether to continue executing an animation phase or to accept and process input.
+// @param t: the intended duration of 1 frame of the application
+// @param key_states: a pointer to SDL pressed keys data
 void Player::update(float t, const Uint8* key_states)
 {
-  this->mv= cam.view() * this->model;
+  mv= cam.view() * model;
 
   if (frame_prevent_interupt_counter) {
     // TODO: more general continue_animation() function, along with a higher level animation-state value to decide which animation to 'continue'
-    walk_animation(&this->frame_prevent_interupt_counter);
+    walk_animation(&frame_prevent_interupt_counter);
   }
   else {
     take_input(key_states);
@@ -176,7 +169,7 @@ void Player::update(float t, const Uint8* key_states)
     for (int i = 0; i < Warp::num_warps[mID]; ++i)         // for each warp point
     {
       if (dest.x == warps[i].p.x && dest.y == warps[i].p.y) { // if the destination is equal to the current warp point
-        Debug::log_from(Debug::player,"warp point found");       // log a message that warp point has been identified
+        log_from(player,"warp point found");       // log a message that warp point has been identified
         if ( !suspend_warp(warps[i].dst) ) {                        // should the player take one final step before the warp takes place?
           do_warp(warps[i].dst);
         }
@@ -207,18 +200,16 @@ void Player::update(float t, const Uint8* key_states)
         spawn.x = -1;
       }
     }
-    bool can_move = Collision_Data::allows_move_to(dest, mID);
-    if ( can_move ) {
+    if ( Collision_Data::allows_move_to(dest, mID) ) {
       if (fsm == fID && frame_prevent_interupt_counter == 0) {
-        this->start_animation();
+        start_animation();
         if (mID != wnode->mID) {
           scene_manager.update_map(mID);
-          this->set_position(spawn.x, spawn.y);
+          set_position(spawn);
         }
       }
     }
     else {
-      // TODO: add a frame deley counter solution for this so that it does not spam when walking into something.
       if (bump_counter == 0) {
         scene_manager.sound.play_sfx(bump_wall);
         bump_counter= 24;
@@ -230,41 +221,51 @@ void Player::update(float t, const Uint8* key_states)
   }
 }
 
+
+
 // Sends updated matrix data to the PlayerSprite shader and issues an OpenGL draw call.
 void Player::render()
 {
   glUseProgram(shader.handle);
   shader.set("player_mvp", cam.projection() * mv);
   glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, this->t);
-  glBindVertexArray(vao);
+  glBindTexture(GL_TEXTURE_2D_ARRAY, t);
+  glBindVertexArray(va);
   glDrawElements(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0);
   glBindVertexArray(0);
   glUseProgram(0);
 }
 
+
+
 // Shift the position of the player as well as the camera
-void Player::set_position(int _x, int _y)
+void Player::set_position(Point p)
 {
-  x_position= _x;
-  y_position= _y;
-  float x = (float)_x + 0.25f;
-  float y = (float)_y + 0.5f;
+  float x (p.x + 0.25f);
+  float y (p.y + 0.5f);
+  x_position= p.x;
+  y_position= p.y;
   vec3 xyCoordinates= vec3(x, y, .001f);
   model= translate(mat4(1.0f), xyCoordinates);
   cam.set_Position(vec3(x, y, cam.get_position().z));
 }
 
+
+
 void Player::set_position(const Warp::Destination& dest)
 {
-  this->set_position(dest.spawn_point.x, dest.spawn_point.y);
+  this->set_position(dest.spawn_point);
 }
+
+
 
 // Set the frame counter appropriately
 void Player::start_animation()
 {
   frame_prevent_interupt_counter= 16;
 }
+
+
 
 bool Player::suspend_warp(const Warp::Destination& dest)
 {
@@ -276,16 +277,20 @@ bool Player::suspend_warp(const Warp::Destination& dest)
   return false;
 }
 
+
+
 // This function is called preciesly when a warp should happen.
 void Player::do_warp(const Warp::Destination& dest)
 {
-  Debug::log_from(Debug::player,"performing warp");
+  log_from(player,"performing warp");
   fsm.input(dest.fID);                // input the facing direction
   scene_manager.update_map(dest.mID); // sets current world node and changes maps array
   this->set_position(dest);           // update the player position
   if (dest.step_after)
     start_animation();
 }
+
+
 
 // Use this function to process any extra key press logic for player
 void Player::take_input(const Uint8* key_states)
@@ -299,14 +304,18 @@ void Player::take_input(const Uint8* key_states)
   if (info_button_delay_counter > 0) --info_button_delay_counter;
 }
 
+
+
 void Player::update_frame_to_stride()
 {
   if      (fsm == idle_l) fsm.input(stride_l1);
   else if (fsm == idle_r) fsm.input(stride_r1);
   else if (fsm == idle_d) fsm.input((stride_left = !stride_left) ? stride_d1 : stride_d2);
   else if (fsm == idle_u) fsm.input((stride_left = !stride_left) ? stride_u1 : stride_u2);
-  else Debug::log_error_from(Debug::player,"failed to update frame to stride");
+  else log_error_from(player,"failed to update frame to stride");
 }
+
+
 
 void Player::update_frame_to_idle()
 {
@@ -314,8 +323,10 @@ void Player::update_frame_to_idle()
   else if (fsm == stride_r1)                     fsm.input(idle_r);
   else if (fsm == stride_d1 || fsm == stride_d2) fsm.input(idle_d);
   else if (fsm == stride_u1 || fsm == stride_u2) fsm.input(idle_u);
-  else Debug::log_error_from(Debug::player,"failed to update frame to idle");
+  else log_error_from(player,"failed to update frame to idle");
 }
+
+
 
 void Player::update_position()
 {
@@ -329,8 +340,10 @@ void Player::update_position()
   else if (fsm == idle_r || fsm == stride_r1) change_position(delta_pos, 0.0f);
   else if (fsm == idle_u || fsm == stride_u1 || fsm == stride_u2) change_position(0.0f, delta_pos);
   else if (fsm == idle_d || fsm == stride_d1 || fsm == stride_d2) change_position(0.0f, -delta_pos);
-  else Debug::log_error_from(Debug::player,"failed to update position");
+  else log_error_from(player,"failed to update position");
 }
+
+
 
 void Player::walk_anim_end()
 {
@@ -339,7 +352,7 @@ void Player::walk_anim_end()
   else if (fsm == idle_l) --x_position;
   else if (fsm == idle_d) --y_position;
   else if (fsm == idle_r) ++x_position;
-  else Debug::log_error_from(Debug::player,"failed to update coordinates, animation state may be incorrect");
+  else log_error_from(player,"failed to update coordinates, animation state may be incorrect");
   // handle pending warps
   if (pending_warp != nullptr) {
     do_warp(*pending_warp);
@@ -349,10 +362,12 @@ void Player::walk_anim_end()
   }
 }
 
+
+
 // Updates frames at specific frame counts over a 16 frame interval. Frame counter decrements invariably, therefore this function shouldn't be called unless *frame_counter is greater than zero. 4 frames are spent in idle pose, 8 frames in stride pose, then 4 frames are spent back in idle so if you keep walking there is an equal frame interval. Assumes 60 FPS.
 void Player::walk_animation(int *frame_counter)
 {
-  if     (*frame_counter < 1)   Debug::log_error_abort(Debug::player,"walk_animation frame_counter should be at least 1 and was not");
+  if     (*frame_counter < 1)   log_error_abort(player,"walk_animation frame_counter should be at least 1 and was not");
   if     (*frame_counter == 4)  update_frame_to_idle();
   else if(*frame_counter == 12) update_frame_to_stride();
   update_position();
