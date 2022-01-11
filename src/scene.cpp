@@ -11,15 +11,19 @@ namespace Scene
   {
     for (Player * p : sprites) p->identify();
     for (auto& m : maps) m.second->identify();
-    textbox->identify();
-    text->identify();
+    text_manager->textbox->identify();
+    text_manager->text->identify();
   }
+
+
 
   void Manager::init_camera(int x, int y)
   {
     float aspect_ratio (x / y);
     this->camera_controller = new Camera(glm::vec3(0, 0, 5), glm::vec3(0, 0, -1), aspect_ratio);
   }
+
+
 
   Player& Manager::new_player(Shader& s)
   {
@@ -28,24 +32,30 @@ namespace Scene
     return *sprites.back();
   }
 
-  void Manager::init_text(Shader & s, Shader& s2)
+
+
+  void Manager::init_text()
   {
-    this->text = new Text_Sprite(*this, s);
-    this->textbox = new Text_Box_Sprite(*this, s2);
+    text_manager= new Text_Manager(*this);
   }
 
-  void Manager::init_maps(Shader& s)
+
+
+  void Manager::init_maps()
   {
+    Shader& s = new_shader("shader/MapSprite.glsl");
     World_Node * active_wnode = world_graph->get_current_node();
     if (active_wnode == nullptr)
-      Debug::log_error_abort(Debug::scene,"manager expected the world_graph to have a current world node");
+      log_error_abort(scene,"manager expected the world_graph to have a current world node");
     Camera& c = *this->camera_controller;
     maps[middle] = new Map(active_wnode->mID, c, s);
-    maps[up]     = new Map(null_map_id, c, s); // up
-    maps[left]   = new Map(null_map_id, c, s); // left
-    maps[down]   = new Map(null_map_id, c, s); // down
-    maps[right]  = new Map(null_map_id, c, s); // right
+    maps[up]     = new Map(null_map_id, c, s);
+    maps[left]   = new Map(null_map_id, c, s);
+    maps[down]   = new Map(null_map_id, c, s);
+    maps[right]  = new Map(null_map_id, c, s);
   }
+
+
 
   void Manager::update_map(Map_ID_enum mID)
   {
@@ -127,6 +137,8 @@ namespace Scene
     }
   }
 
+
+
   Shader& Manager::new_shader(const char* file_name)
   {
     shaders.push_back(new Shader(glCreateProgram()));
@@ -135,13 +147,17 @@ namespace Scene
     return *shaders.back();
   }
 
+
+
   void Manager::update(float t)
   {
     for (auto& s : sprites) s->update(t, key_states);
     for (auto& m : maps)    m.second->update(t, key_states);
-    textbox->update(t, key_states);
-    text->update(t, key_states);
+    text_manager->textbox->update(t, key_states);
+    text_manager->text->update(t, key_states);
   }
+
+
 
   void Manager::render()
   {
@@ -156,17 +172,21 @@ namespace Scene
     }
     for (auto& s : sprites) s->render();
     // TODO: render grass, etc, things that need to be rendered over the player
-    textbox->render();
-    text->render();
+    text_manager->textbox->render();
+    text_manager->text->render();
   }
+
+
 
   void Manager::clean()
   {
     for (auto& s: sprites) delete s;
     for (auto& m: maps)    delete m.second;
     for (auto& s: shaders) delete s;
-    delete text;
+    delete text_manager;
   }
+
+
 
   void Manager::refresh()
   {
