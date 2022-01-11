@@ -1,22 +1,21 @@
 #pragma once
-#include "sprite.h"
+#include "textlines.h"
+#include "textbox.h"
 
 namespace Scene { class Manager; }
 
-class Text_Sprite : public Sprite
+class Text_Manager
 {
-  GLuint va, vb, eb, ssb, t;
-  int * char_buffer;
-  int data_size, text_counter = 0;
-  std::string data="";
-  bool writing= false;
-public:
-  Text_Sprite(Scene::Manager& ,Shader&);
-  ~Text_Sprite();
+  Scene::Manager &scene_manager;
 
-  void set_text(const char *);
-  void init_textures();
-  void init_buffers() override;
-  void update(float,const Uint8 *) override;
-  void render() override;
+  // DATA
+  // 
+
+public:
+
+  Text_Sprite *text;
+  Text_Box_Sprite *textbox;
+
+  Text_Manager(Scene::Manager &man);
+  ~Text_Manager();
 };
