@@ -2,22 +2,24 @@
 #include <SDL_image.h>
 #include "scene.h"
 #include "texture.h"
-
-
 using namespace Debug;
 
 
+
 Text_Box_Sprite::Text_Box_Sprite(Scene::Manager& man, Shader& s) 
-: Sprite(0.0f, 0.0f, 0.002f, *man.camera_controller, s)
+: Sprite(0.0f, 0.0f, 0.0f, *man.camera_controller, s)
 {
   init_buffers();
   init_texture();
 }
 
+
+
 Text_Box_Sprite::~Text_Box_Sprite()
 {
-  delete char_buffer;
 }
+
+
 
 void Text_Box_Sprite::init_texture()
 {
@@ -35,14 +37,16 @@ void Text_Box_Sprite::init_texture()
   delete image_data;
 }
 
+
+
 void Text_Box_Sprite::init_buffers()
 {
   float vb_data[]=
-  {// (position:vec3)      (texture coordinates:vec2)
-   -1.0f, -0.2f, 0.0f,      0.0f, 0.0f,
-   +1.0f, -0.2f, 0.0f,      1.0f, 0.0f,
-   +1.0f, -1.0f, 0.0f,      1.0f, 1.0f,
-   -1.0f, -1.0f, 0.0f,      0.0f, 1.0f
+  {// (position:vec2)  (texture coordinates:vec2)
+   -.5f, +.5f,       0.f, 0.f,
+   +.5f, +.5f,       1.f, 0.f,
+   +.5f, -.5f,       1.f, 1.f,
+   -.5f, -.5f,       0.f, 1.f
   };
   unsigned eb_data[]=
   {
@@ -59,20 +63,35 @@ void Text_Box_Sprite::init_buffers()
   glBindBuffer(GL_ARRAY_BUFFER, vb);
   glBufferData(GL_ARRAY_BUFFER, sizeof(vb_data), vb_data, GL_STATIC_DRAW);
   glEnableVertexArrayAttrib(va, 0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, false, 20, (void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, false, 16, (void*)0);
   glEnableVertexArrayAttrib(va, 1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, false, 20, (void*)12);
+  glVertexAttribPointer(1, 2, GL_FLOAT, false, 16, (void*)8);
   glBindVertexArray(0);
 }
+
+
 
 void Text_Box_Sprite::update(float dt, const uint8_t * key_states)
 {
   SDL_Event e;
 }
 
+
+
 void Text_Box_Sprite::render()
 {
   glUseProgram(shader.handle);
+  // if (dialog_box)
+  //   send dialog box Vertex-Position-Adjustment-Matrix
+  // else if (menu_box)
+  //   send menu box V-P-A-M
+  // else if (answer box)
+  //   send answer box V-P-A-M
+
+  //glm::mat2 adj= glm::mat2(1.0f);
+  //adj[0] = glm::vec2(2.0f, 0.0f);
+  //adj[1] = glm::vec2(0.0f, 0.8f);
+  //shader.set("adj",adj);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, t);
   glBindVertexArray(va);
