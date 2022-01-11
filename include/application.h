@@ -20,7 +20,7 @@ struct SDL_App_Data
 class Application
 {
 protected:
-  App_Stats stats;
+  App_Stats app_stats;
   SDL_App_Data sdl;
   Scene::Manager scene_manager;
   bool running=false;
