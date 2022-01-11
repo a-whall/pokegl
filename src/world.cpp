@@ -45,7 +45,7 @@ World_Graph::World_Graph()
     Map_ID_enum m = static_cast<Map_ID_enum>(i);
     world_map[m] = new World_Node(m);
     if (world & output_filter)
-      log<std::cout>("\t      : ",obj_addr(world_map[m])," (node) ",to_str[world_map[m]->mID]);
+      log<std::cout>("\t      ",yellow,":",reset,obj_addr(world_map[m])," (node) ",to_str[world_map[m]->mID]);
   }
   // build adjacency list for overworld maps
   world_map[new_bark_town]->set_neighbors(null_map_id, route_29, null_map_id, null_map_id); // TODO: fix neighbors. set to nullmid for testing
@@ -80,10 +80,10 @@ World_Graph::World_Graph()
 
 World_Graph::~World_Graph()
 {
-  if (world & output_filter) log_from(object,"dealloc:");
+  if (world & output_filter) log_from(object,dealloc);
   for (auto& node : world_map) {
     if (world & output_filter)
-      log<cout>("\t\t: ",obj_addr(node.second)," (node) ",to_str[node.second->mID]);
+      log<cout>("\t\t",yellow,":",reset,obj_addr(node.second)," (node) ",to_str[node.second->mID]);
     delete node.second;
   }
   obj_identify(world,dealloc,this,"Graph");
