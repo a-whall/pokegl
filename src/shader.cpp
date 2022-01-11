@@ -68,6 +68,7 @@ Shader* Shader::set(const char* name, float x, float y, float z){ glUniform3f(ge
 Shader* Shader::set(const char* name, float x, float y, float z, float w){ glUniform4f(get_uniform_location(name), x, y, z, w);             return this; }
 Shader* Shader::set(const char* name, glm::vec3 v)            { glUniform3f(get_uniform_location(name), v.x, v.y, v.z);                     return this; }
 Shader* Shader::set(const char* name, glm::vec4 v)            { glUniform4f(get_uniform_location(name), v.x, v.y, v.z, v.w);                return this; }
+Shader* Shader::set(const char* name, glm::mat2 m)            { glUniformMatrix2fv(get_uniform_location(name), 1, GL_FALSE, &m[0][0]);      return this; }
 Shader* Shader::set(const char* name, const glm::mat3& m)     { glUniformMatrix3fv(get_uniform_location(name), 1, GL_FALSE, &m[0][0]);      return this; }
 Shader* Shader::set(const char* name, const glm::mat4& matrix){ glUniformMatrix4fv(get_uniform_location(name), 1, GL_FALSE, &matrix[0][0]); return this; }
 
