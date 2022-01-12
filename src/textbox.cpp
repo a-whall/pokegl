@@ -42,7 +42,7 @@ void Text_Box_Sprite::init_texture()
 void Text_Box_Sprite::init_buffers()
 {
   float vb_data[]=
-  {// (position:vec2)  (texture coordinates:vec2)
+  {//position:vec2   texture coordinates:vec2
    -.5f, +.5f,       0.f, 0.f,
    +.5f, +.5f,       1.f, 0.f,
    +.5f, -.5f,       1.f, 1.f,
