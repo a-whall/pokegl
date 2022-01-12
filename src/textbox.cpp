@@ -6,22 +6,24 @@ using namespace Debug;
 
 
 
-Text_Box_Sprite::Text_Box_Sprite(Scene::Manager& man, Shader& s) 
+Text_Box::Text_Box(Scene::Manager& man, Shader& s) 
 : Sprite(0.0f, 0.0f, 0.0f, *man.camera_controller, s)
 {
+  obj_identify(text,alloc,this,"Text-Box");
   init_buffers();
   init_texture();
 }
 
 
 
-Text_Box_Sprite::~Text_Box_Sprite()
+Text_Box::~Text_Box()
 {
+  obj_identify(text,dealloc,this,"Text-Box");
 }
 
 
 
-void Text_Box_Sprite::init_texture()
+void Text_Box::init_texture()
 {
   glActiveTexture(GL_TEXTURE0);
   glGenTextures(1, &t);
@@ -39,7 +41,7 @@ void Text_Box_Sprite::init_texture()
 
 
 
-void Text_Box_Sprite::init_buffers()
+void Text_Box::init_buffers()
 {
   float vb_data[]=
   {//position:vec2   texture coordinates:vec2
@@ -71,14 +73,14 @@ void Text_Box_Sprite::init_buffers()
 
 
 
-void Text_Box_Sprite::update(float dt, const uint8_t * key_states)
+void Text_Box::update(float dt, const uint8_t * key_states)
 {
   SDL_Event e;
 }
 
 
 
-void Text_Box_Sprite::render()
+void Text_Box::render()
 {
   glUseProgram(shader.handle);
   // if (dialog_box)

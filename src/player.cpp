@@ -208,11 +208,11 @@ void Player::update(float t, const Uint8* key_states)
     else {
       if (bump_counter == 0) {
         scene_manager.sound.play_sfx(bump_wall);
-        bump_counter= 24;
+        bump_counter= 32;
       }
-      if (bump_counter > 0) {
-        --bump_counter;
-      }
+    }
+    if (bump_counter > 0) {
+      --bump_counter;
     }
   }
 }

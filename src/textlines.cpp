@@ -1,13 +1,16 @@
 #include "textlines.h"
+#include "text.h"
 #include <SDL_image.h>
 #include "scene.h"
 #include "texture.h"
 
-constexpr GLsizei char_buffer_size = 64; // number of characters in the character buffer
+
 
 using namespace Debug;
 
-Text_Sprite::Text_Sprite(Scene::Manager& man, Shader& s) 
+
+
+Text_Lines::Text_Lines(Scene::Manager& man, Shader& s) 
 : Sprite(0.0f, 0.0f, 0.002f, *man.camera_controller, s)
 {
   obj_identify(text,alloc,this,"Text-Lines");
@@ -15,13 +18,17 @@ Text_Sprite::Text_Sprite(Scene::Manager& man, Shader& s)
   init_textures();
 }
 
-Text_Sprite::~Text_Sprite()
+
+
+Text_Lines::~Text_Lines()
 {
   delete char_buffer;
   obj_identify(text,dealloc,this,"Text-Lines");
 }
 
-void Text_Sprite::init_textures()
+
+
+void Text_Lines::init_textures()
 {
   std::vector<const char*> char_sprite_paths=
   { // note: order matches ascii starting at space
@@ -121,11 +128,7 @@ void Text_Sprite::init_textures()
     "assets/char/rc.png",
     "assets/char/tld.png"
   };
-  glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, & this->t);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, this->t);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  generate_texture(GL_TEXTURE_2D_ARRAY, &t);
   int w, h, count = char_sprite_paths.size();
   GLubyte * image_data= load_textures(char_sprite_paths, text, this, &w, &h, 4);
   glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, w, h, count); // allocate GPU memory
@@ -133,14 +136,16 @@ void Text_Sprite::init_textures()
   delete image_data;
 }
 
-void Text_Sprite::init_buffers()
+
+
+void Text_Lines::init_buffers()
 {
   float vb_data[]= // non-negative unit square, slightly towards camera in the z axis
   { // position x y z         tex coords
-    0.f, +1.f, -.1f,       0.f, 0.f,
-   +1.f, +1.f, -.1f,       1.f, 0.f,
-   +1.f,  0.f, -.1f,       1.f, 1.f,
-    0.f,  0.f, -.1f,       0.f, 1.f
+    0.f, +1.f,       0.f, 0.f,
+   +1.f, +1.f,       1.f, 0.f,
+   +1.f,  0.f,       1.f, 1.f,
+    0.f,  0.f,       0.f, 1.f
   };
   unsigned eb_data[]= // standard quad element buffer
   {
@@ -171,58 +176,61 @@ void Text_Sprite::init_buffers()
   glBufferData(GL_SHADER_STORAGE_BUFFER, char_buffer_size*sizeof(int), char_buffer, GL_DYNAMIC_DRAW); // 4 bytes per int, 36 characters in the buffer.
 
   glEnableVertexArrayAttrib(va, 0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, false, 20, (void*)0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, false, 16, (void*)0);
   glEnableVertexArrayAttrib(va, 1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, false, 20, (void*)12);
+  glVertexAttribPointer(1, 2, GL_FLOAT, false, 16, (void*)8);
 
   glBindVertexArray(0);
 }
 
 
-void Text_Sprite::set_text(const char * message)
+
+// The Text_Manager will send this function the new string for processing. 
+// It overwrites the gl char buffer over the new string and updates the 
+// state variables of this textlines object: 
+// end_of_string_index and the current_text_index 
+// this automatically starts a new animation.
+void Text_Lines::update_gl_char_buffer(std::string new_data)
 {
-  if (writing) {
-    log_error_from(text,"TODO: implement text message queue\n\t as it is this message will be ignored as one is text object is currently locked.\n");
-    return;
-  }
-  // update text data stored in this object
-  data = message;
-  writing = true;
-  text_counter = 0;
-}
+  // reset state variables
+  eos_index= new_data.size();
+  text_index= 0;
 
+  // update the actual buffer data
+  for (int i = 0; i < new_data.size(); ++i)
+    char_buffer[i] = new_data.at(i) - 32;
 
-void Text_Sprite::update(float dt, const uint8_t * key_states)
-{
-  if (text_counter == 0 && key_states[SDL_SCANCODE_H])
-    set_text("Hello, World!");
-
-  if (writing) { // for now text counter will correspond directly to char_buffer index
-    if (text_counter < data.length()) {
-      int i (data.at(text_counter) - 32);
-      log_from(text,"sending ",i);
-      char_buffer[text_counter] = i;
-      glBindVertexArray(va);
-      glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb);
-      glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, char_buffer_size*sizeof(int), char_buffer);
-      glBindVertexArray(0);
-      text_counter++;
-    } else {
-      writing = false;
-      text_counter = 0;
-    }
-  }
-}
-
-void Text_Sprite::render()
-{
-  glUseProgram(shader.handle);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, t);
+  // send new buffer data to GPU
   glBindVertexArray(va);
-
-  glDrawElementsInstanced(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0, 64);
-
+  glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb);
+  glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, eos_index * sizeof(int), char_buffer);
   glBindVertexArray(0);
-  glUseProgram(0);
+}
+
+
+
+void Text_Lines::update(float dt, const uint8_t * key_states)
+{
+  // TODO: update text index using text speed setting. (modulo)
+  // update c++ side member variables.
+  if (text_index < eos_index) {
+    ++text_index;
+  }
+}
+
+
+
+void Text_Lines::render()
+{
+  if(text_index > 0) { 
+    glUseProgram(shader.handle);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, t);
+    glBindVertexArray(va);
+
+    glDrawElementsInstanced(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0, text_index);
+
+    glBindVertexArray(0);
+    glUseProgram(0);
+  }
 }

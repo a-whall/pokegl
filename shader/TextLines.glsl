@@ -1,7 +1,7 @@
 #shader vertex
 #version 460
 
-layout (location = 0) in vec3 vertex_position;
+layout (location = 0) in vec2 vertex_position;
 layout (location = 1) in vec2 vertex_tex_coord;
 layout (std430, binding = 0) buffer char_buffer {
   int char_at[];
@@ -10,10 +10,11 @@ layout (std430, binding = 0) buffer char_buffer {
 out vec2 tex_coord;     // interpolated by fragment
 flat out int char_data; // uninterpolated data exclusive to this batch of vertices and uniform to any fragments that get the output of those vertices
 
-uniform float left_margin= 0.06;   // starting distance from the left edge of the window
-uniform float text_size= 0.14;     // character scaling
-uniform float char_spacing= -0.01; // width between textures in the x
-uniform float line_spacing= 0.1;   // width between textures in the y
+uniform float left_margin= .06;   // starting distance from the left edge of the window
+uniform float text_size= .14;     // character scaling
+uniform float char_spacing= -.01; // width between textures in the x
+uniform float line_spacing= .1;   // width between textures in the y
+uniform float z= -.1;
 
 void main()
 {
@@ -40,7 +41,6 @@ void main()
   // compute the position of a vertex of the quad which will host a single character of text from the char buffer
   float x = -1.0 + left_margin + vertex_position.x * text_size + col * (text_size + char_spacing);
   float y = vertex_position.y * text_size - (0.55 + row * (text_size + line_spacing));
-  float z = vertex_position.z;
 
   // pass the position to opengl to perform clipping with
   gl_Position = vec4(x, y, z, 1.0);
