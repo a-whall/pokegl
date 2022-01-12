@@ -12,7 +12,7 @@ namespace Scene
     for (Player * p : sprites) p->identify();
     for (auto& m : maps) m.second->identify();
     text_manager->textbox->identify();
-    text_manager->text->identify();
+    text_manager->textlines->identify();
   }
 
 
@@ -20,14 +20,14 @@ namespace Scene
   void Manager::init_camera(int x, int y)
   {
     float aspect_ratio (x / y);
-    this->camera_controller = new Camera(glm::vec3(0, 0, 5), glm::vec3(0, 0, -1), aspect_ratio);
+    camera_controller = new Camera(vec3(0, 0, 5), vec3(0, 0, -1), aspect_ratio);
   }
 
 
 
   Player& Manager::new_player(Shader& s)
   {
-    Camera& c = *this->camera_controller;
+    Camera& c = *camera_controller;
     sprites.push_back(new Player(*this, s));
     return *sprites.back();
   }
@@ -153,8 +153,7 @@ namespace Scene
   {
     for (auto& s : sprites) s->update(t, key_states);
     for (auto& m : maps)    m.second->update(t, key_states);
-    text_manager->textbox->update(t, key_states);
-    text_manager->text->update(t, key_states);
+    text_manager->update(t, key_states);
   }
 
 
@@ -172,14 +171,14 @@ namespace Scene
     }
     for (auto& s : sprites) s->render();
     // TODO: render grass, etc, things that need to be rendered over the player
-    text_manager->textbox->render();
-    text_manager->text->render();
+    text_manager->render();
   }
 
 
 
   void Manager::clean()
   {
+    delete world_graph;
     for (auto& s: sprites) delete s;
     for (auto& m: maps)    delete m.second;
     for (auto& s: shaders) delete s;
