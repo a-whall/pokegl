@@ -119,7 +119,7 @@ void compile(const int shader_id, const char* shader_file)
   };
 
   // PRE COMPILING ==================================================================================================================================
-  log_from(code,"parsing: ",white, shader_file,reset);
+  log_from(code,white1,"\n\t -:- parsing -:- ",shader_file+sizeof("shader")," -:-\n",reset); // NOTE: expects that file lives in directory named shader
   while (getline(input_stream, line))
   {
     // try to parse shader directive (Note: this directive is required to write to the correct string stream)
@@ -162,7 +162,11 @@ void compile(const int shader_id, const char* shader_file)
     // in any other case: the line gets pushed to the source code string stream for the shader of type t
     else {
       if (t == NONE)
-        log_error_abort(compiler,"pokegl expects the first line of shader source code to be a #shader directive");
+        log_error_abort(compiler,"missing #shader directive\n\t "
+        "PokeGL expects the first line of shader source code to be a shader directive.\n\t "
+        "for example:",black1," #shader vertex",reset,"\n\t "
+        "syntax for each shader:\n\t -----------------------\n\t"
+        " | vertex\n\t | fragment\n\t | geometry\n\t | compute\n\t | tes evaluate\n\t | tes control\n");
       ss[t] << line << "\n";
     }
     log_from(code,setw(2),line_count++,"| ",line);
