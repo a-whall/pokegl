@@ -3,7 +3,7 @@
 #include "scene.h"
 #include "texture.h"
 
-constexpr GLsizei char_buffer_size = 36; // number of characters in the character buffer
+constexpr GLsizei char_buffer_size = 64; // number of characters in the character buffer
 
 using namespace Debug;
 
@@ -137,10 +137,10 @@ void Text_Sprite::init_buffers()
 {
   float vb_data[]= // non-negative unit square, slightly towards camera in the z axis
   { // position x y z         tex coords
-    0.0f, +1.0f, -0.1f,       0.0f, 0.0f,
-   +1.0f, +1.0f, -0.1f,       1.0f, 0.0f,
-   +1.0f,  0.0f, -0.1f,       1.0f, 1.0f,
-    0.0f,  0.0f, -0.1f,       0.0f, 1.0f
+    0.f, +1.f, -.1f,       0.f, 0.f,
+   +1.f, +1.f, -.1f,       1.f, 0.f,
+   +1.f,  0.f, -.1f,       1.f, 1.f,
+    0.f,  0.f, -.1f,       0.f, 1.f
   };
   unsigned eb_data[]= // standard quad element buffer
   {
@@ -152,7 +152,7 @@ void Text_Sprite::init_buffers()
   for (int i = 0; i < char_buffer_size; ++i)
     char_buffer[i] = 0;
 
-  this->n_verts= 6;
+  n_verts= 6;
 
   glGenVertexArrays(1, &va);
   glGenBuffers(1, &eb);
@@ -221,7 +221,7 @@ void Text_Sprite::render()
   glBindTexture(GL_TEXTURE_2D_ARRAY, t);
   glBindVertexArray(va);
 
-  glDrawElementsInstanced(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0, 36);
+  glDrawElementsInstanced(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0, 64);
 
   glBindVertexArray(0);
   glUseProgram(0);
