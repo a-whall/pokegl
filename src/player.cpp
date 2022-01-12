@@ -74,14 +74,10 @@ void Player::init_animations()
   };
 
   // Initialize OpenGL texture object
-  glActiveTexture(GL_TEXTURE0);
-  glGenTextures(1, &t);
-  glBindTexture(GL_TEXTURE_2D_ARRAY, t);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  generate_texture(GL_TEXTURE_2D_ARRAY, &t);
 
   // Upload animation frame data to GPU
-  int w, h, bytes_per_pixel= 4, count = frames.size();
+  int w, h, bytes_per_pixel= 4, count= frames.size();
   GLubyte * image_data= load_textures(frames, player, this, &w, &h, bytes_per_pixel);
   glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGBA8, w, h, count); // allocate GPU memory
   glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, w, h, count, GL_RGBA, GL_UNSIGNED_BYTE, image_data); // send pixel data to GPU
