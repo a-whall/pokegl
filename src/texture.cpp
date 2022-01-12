@@ -15,6 +15,24 @@ using namespace Debug;
 
 
 
+// This function is basically so that I don't have to repeat myself. 
+// It calls glGenTextures for the caller, sets the active texture unit to 0, 
+// binds the texture object to the desired binding target (which declares 
+// to OpenGL what type of texture the object actually is). 
+// This function assumes that you want to simply use texture unit 0 and nothing else. 
+// This function also sets the texture object parameters such that no magnification or minification interpolation takes place. 
+// This function binds the object to the given binding target, it is the callers responsibility to unbind the texture.
+void generate_texture(GLenum target, GLuint * handle)
+{
+  glGenTextures(1, handle);
+  glActiveTexture(GL_TEXTURE0);
+  glBindTexture(target, *handle);
+  glTexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+}
+
+
+
 // This is a function that will load a list of given texture files using the SDL image function IMG_Load. 
 // It loads the pixel data into a dynamically allocated array and returns a pointer to that array. 
 // Caller must give a list of textures that : A ) all exist according to their path, 
