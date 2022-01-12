@@ -8,9 +8,10 @@ class Map
 : public Sprite
 {
   GLuint va, vb, eb, t;
+
 public:
-  int w=32, h=32, w_tiles=0, h_tiles=0;
-  int counter=0;
+
+  int w=32, h=32, w_tiles=0, h_tiles=0, counter=0;
   Map_ID_enum current_mID;
   World_Node * world_node;
   bool is_visible=true;
@@ -22,8 +23,9 @@ public:
   void render() override;
   void translate(float, float);
   void change(Map_ID_enum mID);
+
 private:
+
   void init_buffers() override;
-  void init_texture();
   void try_to_load_texture();
 };
