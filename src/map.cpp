@@ -11,12 +11,15 @@
 #include "texture.h"
 
 
+
 using namespace Debug;
 using glm::mat4;
 using glm::mat3;
 
 
+
 const char* get_asset_path(Map_ID_enum);
+
 
 
 Map::Map(Map_ID_enum mID, Camera &cam, Shader &shader)
@@ -27,7 +30,7 @@ Map::Map(Map_ID_enum mID, Camera &cam, Shader &shader)
   glGenVertexArrays(1, &va);
   glGenBuffers(1, &eb);
   glGenBuffers(1, &vb);
-  init_texture();
+  generate_texture(GL_TEXTURE_2D, &t);
   try_to_load_texture();
   init_buffers();
   glUseProgram(shader.handle);
@@ -35,6 +38,7 @@ Map::Map(Map_ID_enum mID, Camera &cam, Shader &shader)
   glUseProgram(0);
   this->Map::translate(0, -.1875); // such that 0,0 becomes the middle of the bottom-left-most tile.
 }
+
 
 
 Map::~Map()
@@ -45,15 +49,6 @@ Map::~Map()
   obj_identify(map,dealloc,this,"Map");
 }
 
-
-void Map::init_texture()
-{
-  glGenTextures(1, &t);
-  glActiveTexture(GL_TEXTURE0);
-  glBindTexture(GL_TEXTURE_2D, t);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-}
 
 
 void Map::try_to_load_texture()
@@ -105,6 +100,7 @@ void Map::init_buffers()
 }
 
 
+
 void Map::update(float t, const Uint8* keystates)
 {
   using namespace Debug;
@@ -116,6 +112,7 @@ void Map::update(float t, const Uint8* keystates)
   if (counter > 0)
     --counter;
 }
+
 
 
 void Map::render()
@@ -133,6 +130,7 @@ void Map::render()
 }
 
 
+
 // Translates the model of this map object in the x-y plane. This function overwrites the model matrix with the result of an identity matrix that has been translated by the given offsets, therefore any previous translations will be overwritten.
 // @param x,y: shift the model matrix by this many units in the x and y directions respectively.
 void Map::translate(float x, float y)
@@ -141,6 +139,7 @@ void Map::translate(float x, float y)
   float hh (this->h_tiles / 2);
   model= glm::translate(mat4(1.0f), vec3(hw + x - 0.25f, hh + y - 0.0625f, 0.0f));
 }
+
 
 
 // Transform this map to load data for a new zone.
