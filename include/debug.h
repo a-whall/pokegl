@@ -27,29 +27,30 @@ namespace Debug
   extern void GLAPIENTRY callback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar *, const void *);
 
 
-  // flags to control general program output
+  // This enum defines a bunch of flags to control general program output
+  // errors from any channel will always print
   enum Debug_Source_enum : uint32_t
   {
-    none        = 0x00000000,
+    none        = 0x00000000, // null debug source id, use this as a descriptive setting for the control variable: 'output_filter'.
     animation   = 0x00000001,
-    application = 0x00000002,
+    application = 0x00000002, // This channel prints high-level notifications at launch about 3rd party operations such as about SDL initialization.
     camera      = 0x00000004,
     collision   = 0x00000008,
-    compiler    = 0x00000010, // prints the compile status of individual shader stage shaders as well as link status of the final executable.
-    stats       = 0x00000020, // prints any stats the Application class may collect.
+    compiler    = 0x00000010, // This channel prints the compile status of individual shader stage shaders as well as link status of the final executable.
+    stats       = 0x00000020, // This channel prints any stats the Application class may collect.
     game        = 0x00000040,
     map         = 0x00000080,
     player      = 0x00000100,
     scene       = 0x00000200,
-    shader      = 0x00000400, // prints information from pokegl Shader objects such as location cache notifications.
+    shader      = 0x00000400, // This channel prints information from pokegl Shader objects such as uniform location cache notifications.
     world       = 0x00000800,
-    sound       = 0x00001000,
+    sound       = 0x00001000, // This channel prints currently playing song when that changes
     warp        = 0x00002000,
     text        = 0x00004000,
     textbox     = 0x00008000,
     sprite      = 0x00010000,
-    code        = 0x00020000, // prints glsl source code as it is parsed from file.
-    object      = 0x00040000, // turn on yellow alloc and dealloc notifications for objects in pokegl. The object must be enabled as well.
+    code        = 0x00020000, // This channel prints glsl source code as it is parsed from file in the compile function during the pre-processing stage.
+    object      = 0x00040000, // This channel turns on yellow alloc and dealloc notifications for objects in pokegl. The objects channel must be enabled as well.
     //open      = 0x00080000,
     //open      = 0x00100000,
     //open      = 0x00200000,
