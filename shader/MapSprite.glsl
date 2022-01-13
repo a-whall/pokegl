@@ -11,7 +11,7 @@ out vec2 tex_coord; // out variables that are not flat are automatically interpo
 void main()
 {
   tex_coord = vertex_texcoord;
-  gl_Position = mapsprite_mvp * vec4(vertex_position, 1.0);
+  gl_Position = mapsprite_mvp * vec4(vertex_position, 1);
 }
 #shader fragment
 #version 460
@@ -22,6 +22,6 @@ layout( binding = 0 ) uniform sampler2D map_tex; // the texture sampler object, 
 
 void main()
 {
-  map_frag_color = vec4( texture(map_tex,tex_coord).rgb, 1.0 );
+  map_frag_color = vec4( texture(map_tex, tex_coord).rgb, 1 );
 }
 #end
