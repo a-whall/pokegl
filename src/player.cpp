@@ -18,7 +18,7 @@ using namespace Debug;
 // @param active_map: a pointer to a pointer which points to the active map (the central map tile of the scene)
 // @param s: a reference to shader for sprite animation
 Player::Player(Scene::Manager& man, Shader &s)
-: Sprite(0.25f, 0.5f, .001f, *man.camera_controller, s),
+: Sprite(.25f, .5f, 0.001f, *man.camera_controller, s),
   scene_manager(man),
   fsm()
 {
@@ -104,10 +104,10 @@ void Player::init_buffers()
 {
   float vb_data[]=
   {
-   -0.5f, 0.5f, 0.0f,      0.0f, 0.0f,
-    0.5f, 0.5f, 0.0f,      1.0f, 0.0f,
-    0.5f,-0.5f, 0.0f,      1.0f, 1.0f,
-   -0.5f,-0.5f, 0.0f,      0.0f, 1.0f
+    -.5f, +.5f, 0.f,       0.f, 0.f,
+    +.5f, +.5f, 0.f,       1.f, 0.f,
+    +.5f, -.5f, 0.f,       1.f, 1.f,
+    -.5f, -.5f, 0.f,       0.f, 1.f
   };
   unsigned eb_data[]=
   {
