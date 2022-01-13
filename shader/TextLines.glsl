@@ -1,33 +1,32 @@
 #shader vertex
 #version 460
 
-layout (location = 0) in vec2 vertex_position;
-layout (location = 1) in vec2 vertex_tex_coord;
+layout (location = 0) in vec2 vert_pos;
 layout (std430, binding = 0) buffer char_buffer {
   int char_at[];
 };
 
-out vec2 tex_coord;     // interpolated by fragment
-flat out int char_data; // uninterpolated data exclusive to this batch of vertices and uniform to any fragments that get the output of those vertices
+out vec2 tex_coord;
+flat out int char_data;
 
-uniform float left_margin= .06;   // starting distance from the left edge of the window
-uniform float text_size= .14;     // character scaling
-uniform float char_spacing= -.01; // width between textures in the x
-uniform float line_spacing= .1;   // width between textures in the y
-uniform float z= -.1;
+uniform float top_margin   = +1.55;
+uniform float left_margin  = +0.06;
+uniform float text_size    = +0.14;
+uniform float char_spacing = -0.01;
+uniform float line_spacing = +0.10;
 
 void main()
 {
-  int col = 0, row = 0; // position of this character from the start of the text (-1.0 + left margin, -0.55f)
+  int col = 0, row = 0;
 
-  tex_coord = vertex_tex_coord;       // texture coordinate to be interpolated by fragment processing
-  char_data = char_at[gl_InstanceID]; // this shader is meant to print the int stored in this buffer as a character
+  tex_coord = mix( vec2( vert_pos.x, 1), vec2(vert_pos.x, 0), vert_pos.y == 1);
 
+  char_data = char_at[gl_InstanceID];
+
+  // 94 => newline, 0 => space
   if (char_data == 94)
-    char_data= 0; // change this chars data to 0 to print space as there is no character texture for newline.
+    char_data= 0;
 
-  // count new lines in the buffer up to this characters index
-  // the new line character code is 94 which is 1 more than the last ascii character '~'
   for (int i = 0; i < gl_InstanceID; ++i)
   {
     if (char_at[i] != 94)
@@ -38,24 +37,71 @@ void main()
     }
   }
 
-  // compute the position of a vertex of the quad which will host a single character of text from the char buffer
-  float x = -1.0 + left_margin + vertex_position.x * text_size + col * (text_size + char_spacing);
-  float y = vertex_position.y * text_size - (0.55 + row * (text_size + line_spacing));
+  float x = -1 + left_margin + vert_pos.x * text_size + col * (text_size + char_spacing);
+  float y = +1 - top_margin + vert_pos.y * text_size - row * (text_size + line_spacing);
 
-  // pass the position to opengl to perform clipping with
-  gl_Position = vec4(x, y, z, 1.0);
+  gl_Position = vec4(x, y, -.1, 1);
 }
 #shader fragment
 #version 460
 
 in vec2 tex_coord;
-flat in int char_data; // char data is the index into the texture array. ordered as ascii starting at space = 0
+
+flat in int char_data;
 
 layout( location = 0 ) out vec4 text_frag_color;
-layout( binding = 0 ) uniform sampler2DArray char_dict; // The texture sampler object, requires > #version 420
+
+layout( binding = 0 ) uniform sampler2DArray char_dict; // texture sampler object, requires at least #version 420.
 
 void main()
 {
-  text_frag_color = texture(char_dict, vec3(tex_coord, char_data));
+  text_frag_color = texture( char_dict, vec3(tex_coord, char_data) );
 }
 #end
+
+# How It Works In Depth:
+------------------------
+
+# vertex
+--------
+attribute: in
+vert_pos: vertex data stream buffer which holds just the vertex position x, y. (vec2)
+char_buffer: character buffer, basically a type to be used as a string. (int[])
+attribute: out
+tex_coord: the coordinates used by texture sampling performed by the fragment shader. (vec2)
+char_data: the index which corresponds directly to a single character of the ascii texture array, accesses the char_buffer string at index gl_InstanceID. (flat int)
+uniform:
+top_margin: starting distance from the top edge of the window.
+left_margin: starting distance from the left edge of the window.
+text_size: character scaling.
+char_spacing: distance between neighboring instances of textured quads (x direction).
+line_spacing: distance between neighboring instances of textured quads (y direction).
+--------
+The vertex shader begins by initializing the position of the character being rendered: col = row = 0;
+I like think of it as Column and Row because the font is mono spaced, so it's grid-like.
+This position is later adjusted by the uniform variables left_margin and top_margin.
+The next thing that happens is defining the texture coordinate that should be output by this vertex.
+That's done by quickly switching the y coordinate of vertex position from 0 to 1 or vice versa,
+this is because texture (0,0) exists 'top left' and world coordinates have (0,0) as 'bottom left'.
+Note that's this is what the mix function is doing, not interpolating anything. I couldn't get the ternary
+operator to work with vector operands so using mix solved that problem but it's just the first thing that worked.
+After that the out variable char_data is assigned by accessing the char_buffer at index gl_InstanceID.
+Any newline characters are then switched to space since newline doesn't have an associated texture image.
+Then, the for loop counts new lines stored inside char_buffer up to the current index (gl_InstanceID)
+to compute the row and column where this character should be rendered. The x and y position are then
+computed and I think the math of those statements should be fairly self explanatory with an understanding
+of OpenGL screen-space. Finally gl_Position is assigned and the main function ends.
+
+# shader:
+---------
+attribute: in
+tex_coord: the auto-interpolated texture coordinate with which to sample. (vec2)
+char_data: char data is the index into the texture array. order matches ascii starting at space = 0. (flat int)
+attribute: out
+text_frag_color: the pixel to be output by this fragment shader
+uniform:
+char_dict: the 2D texture array which stores ascii character images loaded from png (sampler2DArray)
+---------
+All the fragment shader does is sample a texture using the index into the texture array
+that was passed by vertices of the quad this pipeline is rendering. It receives an interpolated
+texture coordinate from those vertices.
