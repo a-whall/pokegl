@@ -140,12 +140,12 @@ void Text_Lines::init_textures()
 
 void Text_Lines::init_buffers()
 {
-  float vb_data[]= // non-negative unit square, slightly towards camera in the z axis
-  { // position x y z         tex coords
-    0.f, +1.f,       0.f, 0.f,
-   +1.f, +1.f,       1.f, 0.f,
-   +1.f,  0.f,       1.f, 1.f,
-    0.f,  0.f,       0.f, 1.f
+  float vb_data[]= // non-negative unit square
+  {
+    0.f, +1.f,
+   +1.f, +1.f,
+   +1.f,  0.f,
+    0.f,  0.f
   };
   unsigned eb_data[]= // standard quad element buffer
   {
@@ -173,12 +173,10 @@ void Text_Lines::init_buffers()
   glBufferData(GL_ARRAY_BUFFER, sizeof(vb_data), vb_data, GL_STATIC_DRAW);
 
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssb);
-  glBufferData(GL_SHADER_STORAGE_BUFFER, char_buffer_size*sizeof(int), char_buffer, GL_DYNAMIC_DRAW); // 4 bytes per int, 36 characters in the buffer.
+  glBufferData(GL_SHADER_STORAGE_BUFFER, char_buffer_size * sizeof(int), char_buffer, GL_DYNAMIC_DRAW);
 
   glEnableVertexArrayAttrib(va, 0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, false, 16, (void*)0);
-  glEnableVertexArrayAttrib(va, 1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, false, 16, (void*)8);
+  glVertexAttribPointer(0, 3, GL_FLOAT, false, 8, (void*)0);
 
   glBindVertexArray(0);
 }
