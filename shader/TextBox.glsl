@@ -6,14 +6,14 @@ layout (location = 1) in vec2 vertex_texcoord;
 
 out vec2 tex_coord;
 
-uniform mat2 adj= mat2(2, 0,  0, .8);
+uniform mat2 scale = mat2(2, 0, 0, .8);
+uniform vec2 shift = vec2(0, -.6);
 
 void main()
 {
-  tex_coord= vertex_texcoord;
-  vec2 adj_pos= adj * vertex_position;
-  adj_pos -= vec2(0, .6);
-  gl_Position= vec4(adj_pos, 0, 1);
+  tex_coord = vertex_texcoord;
+  vec2 adj = scale * vertex_position + shift;
+  gl_Position = vec4(adj.xy, 0, 1);
 }
 #shader fragment
 #version 440
