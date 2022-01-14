@@ -25,10 +25,13 @@ public:
   ~Text_Lines();
 
   void set_text(const char *);
-  void init_textures();
   void update_gl_char_buffer(std::string);
 
-  void init_buffers() override;
   void update(float,const Uint8 *) override;
   void render() override;
+
+private:
+
+  void init_buffers() override;
+  void init_textures();
 };

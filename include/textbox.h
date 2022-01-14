@@ -13,8 +13,13 @@ public:
   Text_Box(Scene::Manager& ,Shader&);
   ~Text_Box();
 
-  void init_texture();
-  void init_buffers() override;
   void update(float,const Uint8 *) override;
   void render() override;
+
+  void set_menu_uniforms();
+
+private:
+
+  void init_texture();
+  void init_buffers() override;
 };
