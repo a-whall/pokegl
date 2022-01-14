@@ -1,6 +1,9 @@
 #include "animation.h"
 #include <iostream>
 #include "debug.h"
+using namespace Debug;
+
+
 
 namespace Animation
 {
@@ -14,11 +17,11 @@ namespace Animation
   void FS::add_transition(Frame_ID_enum event, FS * transitionState)
   {
     if (event_map.find(event) == event_map.end()) {
-      Debug::log_from(Debug::animation,name," -> ",transitionState->get_name()," on ",event); 
+      log_from(animation,name," -> ",transitionState->get_name()," on ",event); 
       this->event_map[event]= transitionState;
     }
     else {
-      Debug::log_from(Debug::animation,name," already has transition for event ",event);
+      log_from(animation,name," already has transition for event ",event);
     }
   }
 
@@ -31,7 +34,7 @@ namespace Animation
       glUseProgram(shader->handle);
       shader->set("player_frame_ID", event_map[event]->frame_ID);
       glUseProgram(0);
-      Debug::log_from(Debug::animation,name," -> ",event_map[event]->get_name());
+      log_from(animation,name," -> ",event_map[event]->get_name());
       result = event_map[event];
     }
     else
@@ -75,7 +78,7 @@ namespace Animation
 
   void FSM::add_transition(Frame_ID_enum fID, Transition t)
   {
-    if (states.find(fID) == states.end())      // if state with name s doesn't exist
+    if (states.find(fID) == states.end())      // if state with frame ID fID doesn't exist
       states[fID]= new FS(fID);                   // create it
     if (states.find(t) == states.end())        // if successor state doesn't exist
       states[t]= new FS(t);                       // create it
