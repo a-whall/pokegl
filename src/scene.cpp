@@ -7,13 +7,6 @@ using namespace Debug;
 
 namespace Scene
 {
-  void Manager::print_objects()
-  {
-    for (Player * p : sprites) p->identify();
-    for (auto& m : maps) m.second->identify();
-    text_manager->textbox->identify();
-    text_manager->textlines->identify();
-  }
 
 
 
