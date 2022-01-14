@@ -3,10 +3,13 @@
 #include <GL/glew.h>
 #include "colorstring.h"
 
+
+
 namespace Debug
 {
   // used frequently throughout the project
   enum Debug_Source_enum : uint32_t;
+
 
 
   // important to this namespace:
@@ -17,14 +20,17 @@ namespace Debug
   using std::forward;
 
 
+
   // Eventually the goal is to add these calls to every class constructor in pokegl which may be used for Application stats in the future.
   string obj_addr(void *);
   void obj_identify(Debug_Source_enum, const string &, void *, const string &);
 
 
+
   // OpenGL callback implementation
   void submit_debug_callback();
   extern void GLAPIENTRY callback(GLenum, GLenum, GLuint, GLenum, GLsizei, const GLchar *, const void *);
+
 
 
   // This enum defines a bunch of flags to control general program output
@@ -70,6 +76,7 @@ namespace Debug
   const char* str(Debug_Source_enum);
 
 
+
   // general terminal output log function.
   // other functions defined below follow this pattern but with predefined output added around the variadic arguments
   // @param args: a comma separated list of anything to print to the template specified output stream.
@@ -80,15 +87,17 @@ namespace Debug
   }
 
 
+
   // abort the program, forward the error message to standard error output stream.
   // @param src: required output source, this is to help identify the source of the bug that is crashing the program.
   // @param args: a comma separated list of anything.
   template<typename ... Args>
   void log_error_abort(Debug_Source_enum src, Args&&... args)
   {
-    log< cerr >(str(src),red1,"fatal error: ",reset,forward<Args>(args)... , "\n[",magenta," Exit ",reset,"] ",magenta,EXIT_FAILURE,reset);
+    log<cerr>(str(src),red1,"fatal error: ",reset,forward<Args>(args)... ,"\n[",magenta," Exit ",reset,"] ",magenta,EXIT_FAILURE,reset);
     exit(EXIT_FAILURE);
   }
+
 
 
   // print a source tag followed by a red "error: " followed by the remaining variadic arguments.
@@ -100,6 +109,7 @@ namespace Debug
   }
 
 
+
   // print a source tag followed by the remaining variadic arguments iff the output source bit is 1 in the output filter.
   template<typename ... Args>
   void log_from(Debug_Source_enum src, Args&&... args)
@@ -109,6 +119,7 @@ namespace Debug
   }
 
 
+
   // print a highlighted green SUCCESS followed by the remaining variadic arguments.
   template<typename ... Args>
   void log_success(Debug_Source_enum src, Args&&... args)
@@ -116,6 +127,7 @@ namespace Debug
     if (src & output_filter)
       log<cout>(str(src),greenb," SUCCESS ",reset,forward<Args>(args)...);
   }
+
 
 
   // print a highlighted red FAILURE followed by the remaining variadic arguments.
