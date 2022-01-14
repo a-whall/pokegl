@@ -2,6 +2,10 @@
 #include "textlines.h"
 #include "textbox.h"
 
+
+// The philosophy I am choosing is to have all text be rendered and updated by a single object. 
+// This is the purpose of Text_Manager. To encapsulate everything to do with text.
+
 namespace Scene { class Manager; }
 
 
