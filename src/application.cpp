@@ -153,17 +153,39 @@ void Application::init_window_and_keystates_SDL(const char* title, int x, int y,
 
 
 
-// Create an OpenGL context, glsl = version 4.5, core profile => forward compatibility glsl
+// Create an OpenGL context, glsl = version 4.5, core profile => forward compatibility glsl, debugging is
 void Application::config_opengl_context_SDL()
 {
-  sdl.context = SDL_GL_CreateContext(sdl.p_window);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, SDL_GL_CONTEXT_DEBUG_FLAG);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
-  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
-  SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
-  SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
-  Debug::log_from(Debug::application,"OpenGL context attributes configured via SDL");
+  int core_profile = 1, debug = 1, ver_maj = 4, ver_min = 5;
+
+  if ( sdl.context= SDL_GL_CreateContext(sdl.p_window) ) {
+    // set context attributes
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, core_profile);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, debug);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 6);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
+
+    // get the important attributes to log accurately
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &core_profile);
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_FLAGS, &debug);
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &ver_maj);
+    SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &ver_min);
+
+    // print notification from the application output channel
+    log_from(application,"------------------------\n\t  OpenGL context created\n\t"
+     " ------------------------\n\t"
+     " | vendor: ",glGetString(GL_VENDOR),"\n\t"
+     " | renderer: ",glGetString(GL_RENDERER),"\n\t"
+     " | implementation: ",glGetString(GL_VERSION),"\n\t",
+     " | using version: ",ver_maj,'.',ver_min,
+     core_profile ? "\n\t | core profile":"",
+     debug ? "\n\t | debugging allowed":"",'\n');
+  }
+  else {
+    log_error_abort(application, "failed to create OpenGL context\n\t ", SDL_GetError());
+  }
 }
 
 
