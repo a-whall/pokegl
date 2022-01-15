@@ -1,8 +1,7 @@
 #shader vertex
 #version 440
 
-layout (location = 0) in vec2 vertex_position;
-layout (location = 1) in vec2 vertex_texcoord;
+layout (location = 1) in vec4 vertex_buffer_data; // location 1 points to vec4( pos:vec2 , tex_coord:vec2 )
 
 out vec2 tex_coord;
 
@@ -11,8 +10,9 @@ uniform vec2 shift = vec2(0, -.6);
 
 void main()
 {
-  tex_coord = vertex_texcoord;
-  vec2 adj = scale * vertex_position + shift;
+  vec2 position = vertex_buffer_data.xy;
+  tex_coord = vertex_buffer_data.zw;
+  vec2 adj = scale * position + shift;
   gl_Position = vec4(adj.xy, 0, 1);
 }
 #shader fragment
