@@ -42,12 +42,14 @@ void Application::step(float frame_time)
     if (event.type == SDL_QUIT)
       running= false;
     // press escape to exit
-    if (event.type == SDL_KEYUP
-    && event.key.keysym.sym == SDLK_ESCAPE)
+    if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
       running= false;
     // scroll in the z axis for 2D zoom
     if (event.type == SDL_MOUSEWHEEL)
       scene_manager.camera_controller->move(glm::vec3(0, 0, -event.wheel.y));
+    // push event to text-manager
+    if (event.type == SDL_KEYDOWN)
+      scene_manager.text_manager->key_downs.push(event.key.keysym);
   }
 
   // update
