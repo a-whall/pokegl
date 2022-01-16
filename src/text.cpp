@@ -13,18 +13,6 @@ using namespace Debug;
 
 
 
-typedef std::vector<GLuint*> Buffer_List;
-// prototype for initializing many buffer objects at once, may create buffer.h for functions like this, similar to how texture.h works
-void generate_buffers(Buffer_List list)
-{
-  glGenBuffers(list.size(), *list.data());
-}
-
-
-
-// Construct Text_Manager. 
-// This also constructs two derived sprite classes:
-// Text_Box and Text_Lines
 Text_Manager::Text_Manager(Scene::Manager &man)
 : scene_manager(man),
   text_buffer(),
@@ -33,6 +21,9 @@ Text_Manager::Text_Manager(Scene::Manager &man)
 {
   // participate in pokegl object tracking
   obj_identify(text,alloc,this,"Text-Manager");
+
+  // initialize state variables
+  si= ci= fi= len= 0;
 
   // allocate and zero the char buffer (aka fill it with spaces)
   char_buffer= new GLint[char_buffer_size];
@@ -68,7 +59,18 @@ Text_Manager::Text_Manager(Scene::Manager &man)
 
   // generate opengl objects
   glGenVertexArrays(1, &va);
-  generate_buffers({ &eb, &vbl, &vbb, &ssb });
+  glGenBuffers(1, &eb);
+  glGenBuffers(1, &vbl);
+  glGenBuffers(1, &vbb);
+  glGenBuffers(1, &ssb);
+
+  log_from(text,obj_addr(this),":\n\t"
+    " | generated 1 vertex array object: ",va,"\n\t"
+    " | generated 4 buffer objects:\n\t"
+    " |     element buffer       : ",eb, "\n\t"
+    " |     vertex buffer (lines): ",vbl,"\n\t"
+    " |     vertex buffer (box)  : ",vbb,"\n\t"
+    " |     shader storage buffer: ",ssb,'\n');
 
   // bind the text managers vertex array object
   glBindVertexArray(va);
@@ -211,10 +213,12 @@ Text_Manager::Text_Manager(Scene::Manager &man)
   generate_texture(GL_TEXTURE_2D, &tb);
   image_data= load_textures({"assets/textbox.png"}, textbox, this, &w, &h, 4);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
-  glUseProgram(text_box.handle);
-  text_box.set("textbox_texture",0); // assumes GL_TEXTURE0 is the active texture slot
-  glUseProgram(0);
   delete image_data;
+
+  // manually set textbox_texture uniform to 0
+  glUseProgram(text_box.handle);
+  text_box.set("textbox_texture",0); // assumes active-texture-slot == GL_TEXTURE0
+  glUseProgram(0);
 }
 
 
@@ -228,36 +232,80 @@ Text_Manager::~Text_Manager()
 
 // This will act as the standard interface for the rest of the program to interact 
 // with from their references to the scene manager. It updates the dialog text buffer 
-// sets the flag has_text to change the state of Text_Manager.
-void Text_Manager::set_text(std::string&& msg)
+// sets the flag dialog to change the state of Text_Manager.
+void Text_Manager::set_dialog(std::string&& msg)
 {
-  // has_text boolean: basically an is_writing statecheck
-  if (has_text) {
+  // dialog boolean: basically an is_writing statecheck
+  if (dialog) {
     log_error_from(text,"no message queue has been implemented\n\t "
-      "Text_Manager::set_text() is ignoring a message request.\n");
+      "Text_Manager::set_dialog() is ignoring a message request.\n");
     return;
   }
   // update text data stored in this object
   text_buffer = std::forward<std::string>(msg);
+
   // update the actual opengl buffer which stores dialog text
-  update_gl_char_buffer( text_buffer );
+  update_gl_char_buffer( );
+
   // set state flag
-  has_text = true;
+  dialog = true;
+}
+
+
+
+int get_second_newline(std::string& text, int start)
+{
+  int l, i;
+  l= text.length();
+  i= start;
+  i= text.find('\n',i + 1);
+  if (i == std::string::npos)
+    i= l-1;
+  else {
+    i= text.find('\n',i + 1);
+    if (i == std::string::npos)
+      i= l-1;
+  }
+  return i;
 }
 
 
 
 void Text_Manager::update(float t, const Uint8 * key_states)
 {
-  if (!has_text && key_states[SDL_SCANCODE_H]) {
-    set_text("Hello, World!");
+  // handle key downs sent from application::step
+  while (key_downs.size() > 0) {
+    SDL_Keysym e = key_downs.front();
+    if (e.sym == SDLK_h) {
+      if (! dialog) {
+        set_dialog("multi-line\ntext prototype\nand some more\ntext ");
+      } else {
+        if (ci == len - 1) {
+          dialog= false;
+          ci= si= fi= len= 0;
+          set_baseID= true;
+        } else if (ci == fi) {
+          log_from(text,"ci == fi == ",fi);
+          ci= si= fi + 1;
+          fi= get_second_newline(text_buffer, fi + 1);
+          log_from(text,"fi= ",fi);
+          set_baseID= true;
+        } else {
+          ci= fi;
+        }
+      }
+    }
+    if (e.sym == SDLK_PAGEUP) {
+      print_state();
+    }
+    key_downs.pop();
   }
   // if textlines has reached the end of string {
-  //   show a arrow and wait for input
+  //   show an arrow and wait for input
   //   set state: waiting for input
   // }
-  if (text_index < eos_index) {
-    ++text_index;
+  if (ci < fi) {
+    ++ci;
   }
 }
 
@@ -266,17 +314,18 @@ void Text_Manager::update(float t, const Uint8 * key_states)
 // render textbox and up to the current index instances of the character drawing shader.
 void Text_Manager::render()
 {
-  if (!has_text)
+  if (!dialog)
     return;
   glBindVertexArray(va);
   glUseProgram(text_box.handle);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, tb);
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-  if(text_index > 0) {
+  if(ci > 0) {
     glUseProgram(text_lines.handle);
+    if(set_baseID){ set_baseID=false; text_lines.set("baseID",si); }
     glBindTexture(GL_TEXTURE_2D_ARRAY, tl);
-    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, text_index);
+    glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ci - si);
   }
   glBindVertexArray(0);
   glUseProgram(0);
@@ -285,22 +334,34 @@ void Text_Manager::render()
 
 
 // overwrites the gl char buffer over the new string and updates the 
-// state variables of this textlines object: 
-// end_of_string_index and the current_text_index 
+// state variables: end_of_string_index and the current_text_index 
 // this automatically starts a new animation by setting text index to 0.
-void Text_Manager::update_gl_char_buffer(std::string& new_data)
+void Text_Manager::update_gl_char_buffer( )
 {
   // reset state variables
-  eos_index= new_data.size();
-  text_index= 0;
+  int si = fi;
+  len= text_buffer.size();
+  fi= get_second_newline(text_buffer, fi);
+  ci= 0;
 
   // update the actual buffer data
-  for (int i = 0; i < new_data.size(); ++i)
-    char_buffer[i] = new_data.at(i) - 32;
-
+  for (int i = 0; i < len; ++i)
+  {
+    int ch (text_buffer.at(i));
+    if (ch == '\n')
+      ch = 126; // newline
+    char_buffer[i] = ch - 32;
+  }
   // send new string data to GPU (likely not the whole buffer)
   glBindVertexArray(va);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb);
-  glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, eos_index * sizeof(int), char_buffer);
+  glBufferSubData(GL_SHADER_STORAGE_BUFFER, si * sizeof(int), len * sizeof(int), char_buffer);
   glBindVertexArray(0);
+}
+
+
+
+void Text_Manager::print_state()
+{
+  log_from(text,"si = ",si,", ci = ",ci,", fi = ",fi,", len = ",len);
 }

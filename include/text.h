@@ -2,6 +2,7 @@
 #include <string>    // std::string
 #include <SDL.h>     // Uint8
 #include <GL/glew.h> // GLuint
+#include <queue>
 
 
 // All text will be rendered and updated by a single object: Text_Manager.
@@ -31,15 +32,26 @@ class Text_Manager
 
 public:
 
-  int eos_index;    // the size of the data string
-  int text_index=0; // render this many instances of the text character shader.
-  bool has_text=false;
+  int si, ci, fi, len;
+  bool set_baseID=false;
+  bool dialog=false;
+  bool menu=false;
+  bool yesno=false;
+  std::queue<SDL_Keysym> key_downs;
 
   Text_Manager(Scene::Manager &man);
   ~Text_Manager();
 
-  void update_gl_char_buffer(std::string&);
-  void set_text(std::string&&);
+  void update_gl_char_buffer();
+  void set_dialog(std::string&&);
   void update(float, const Uint8 *);
   void render();
+
+  void print_state();
+
+  // dialog may be in the middle of animation
+  // *mouse-click-event* (for example)
+  // text-manager could have it's own event queue
+  // to which the scene_manager can forward events of interest.
+  // then on update, it will process those events.
 };

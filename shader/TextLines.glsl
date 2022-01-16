@@ -9,9 +9,10 @@ layout (std430, binding = 0) buffer char_buffer {
 out vec2 tex_coord;
 flat out int char_data;
 
+uniform int baseID         = 0;
 uniform float top_margin   = +1.55;
 uniform float left_margin  = +0.06;
-uniform float text_size    = +0.14;
+uniform float text_size    = +0.13;
 uniform float char_spacing = -0.01;
 uniform float line_spacing = +0.10;
 
@@ -21,13 +22,13 @@ void main()
 
   tex_coord = mix( vec2( vert_pos.x, 1), vec2(vert_pos.x, 0), vert_pos.y == 1);
 
-  char_data = char_at[gl_InstanceID];
+  char_data = char_at[baseID + gl_InstanceID];
 
-  // 94 => newline, 0 => space
+  // 94 -> newline, 0 -> space
   if (char_data == 94)
     char_data= 0;
 
-  for (int i = 0; i < gl_InstanceID; ++i)
+  for (int i = baseID; i < gl_InstanceID + baseID; ++i)
   {
     if (char_at[i] != 94)
       ++col;
@@ -69,8 +70,10 @@ vert_pos: vertex data stream buffer which holds just the vertex position x, y. (
 char_buffer: character buffer, basically a type to be used as a string. (int[])
 attribute: out
 tex_coord: the coordinates used by texture sampling performed by the fragment shader. (vec2)
-char_data: the index which corresponds directly to a single character of the ascii texture array, accesses the char_buffer string at index gl_InstanceID. (flat int)
+char_data: the index which corresponds directly to a single character of the ascii texture array. (flat int)
+         - accesses the char_buffer string at index baseID + gl_InstanceID.
 uniform:
+baseID: pointer to the starting index of the character buffer.
 top_margin: starting distance from the top edge of the window.
 left_margin: starting distance from the left edge of the window.
 text_size: character scaling.
