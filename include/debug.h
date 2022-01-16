@@ -72,7 +72,7 @@ namespace Debug
     //open      = 0x80000000,
     all         = 0xffffffff
   };
-  constexpr unsigned output_filter= all; // object | sound | map | player | shader | stats;
+  constexpr unsigned output_filter= text | sound | map | player | shader | stats;
   const char* str(Debug_Source_enum);
 
 
