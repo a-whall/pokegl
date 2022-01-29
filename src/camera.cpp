@@ -1,7 +1,7 @@
 #include "camera.h"
 #include <gtc/type_ptr.hpp>
 
-Camera::Camera(): Camera(vec3(0, 0, 2), vec3(0, 0, -1), 1.25f){} // default camera-position, view-direction and aspect-ratio
+Camera::Camera(): Camera(vec3(0, 0, 5), vec3(0, 0, -1), 1.25f){} // default camera-position, view-direction and aspect-ratio
 
 Camera::Camera(vec3 pos, vec3 view_direction, float aspect)
 {
