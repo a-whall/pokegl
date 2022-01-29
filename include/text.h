@@ -28,7 +28,7 @@ class Text_Manager
   Text_Buffer text_buffer;              // string data
   Shader &text_box, &text_lines;        // 2 shaders
   GLuint va, vbb, vbl, eb, ssb, tb, tl; // opengl object handles
-  int * gl_char_buffer_data;                    // opengl string buffer
+  int * gl_char_buffer_data;            // opengl string buffer
 
 public:
 
