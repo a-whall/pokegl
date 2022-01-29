@@ -103,5 +103,5 @@ enum SFX_ID : std::uint8_t
   max_sfx_id
 };
 
-typedef SFX_ID  SFX_ID_enum;
-typedef Track_ID  Track_ID_enum;
+typedef  SFX_ID  SFX_ID_enum;
+typedef  Track_ID  Track_ID_enum;
