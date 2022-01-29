@@ -6,6 +6,7 @@
 #include "warps.h"
 #include "scene.h"
 #include "texture.h"
+#include <gtx/string_cast.hpp>
 
 
 
@@ -139,6 +140,13 @@ void Player::init_buffers()
 void Player::update(float t, const Uint8* key_states)
 {
   mv= cam.view() * model;
+//   if (first) {
+//     log_from(player,"M ",glm::to_string(model));
+//     log_from(player,"V ",glm::to_string(cam->view));
+//     log_from(player,"MV ",glm::to_string(mv));
+//   }
+  
+  //log_from(player,"V ",glm::to_string(cam.view()));
 
   if (frame_prevent_interupt_counter) {
     // TODO: more general continue_animation() function, along with a higher level animation-state value to decide which animation to 'continue'
@@ -147,24 +155,24 @@ void Player::update(float t, const Uint8* key_states)
   else {
     take_input(key_states);
     World_Node *  wnode= scene_manager.world_graph->get_current_node();
-    Map_ID_enum   mID= wnode->mID;
+    Map_ID_enum   dest_mID= wnode->mID[0];
     Frame_ID_enum fID= fsm.get_fid();
     Point dest= {x_position,y_position};
 
-    if      (key_states[SDL_SCANCODE_W]) { ++dest.y; fID=idle_u; }
-    else if (key_states[SDL_SCANCODE_A]) { --dest.x; fID=idle_l; }
-    else if (key_states[SDL_SCANCODE_S]) { --dest.y; fID=idle_d; }
-    else if (key_states[SDL_SCANCODE_D]) { ++dest.x; fID=idle_r; }
+    if      (key_states[SDL_SCANCODE_W]) { ++dest.y(); fID=idle_u; }
+    else if (key_states[SDL_SCANCODE_A]) { --dest.x(); fID=idle_l; }
+    else if (key_states[SDL_SCANCODE_S]) { --dest.y(); fID=idle_d; }
+    else if (key_states[SDL_SCANCODE_D]) { ++dest.x(); fID=idle_r; }
 
-    if (dest.x == x_position && dest.y == y_position) // if no movement
+    if (dest.x() == x_position && dest.y() == y_position) // if no movement
       return;                                            // no need to do anything further
 
     fsm.input(fID); // may need a "turn_around" animation that takes a couple frames to delay input.
 
-    const Warp::Warp_Point * warps = Warp::get_warp_table(mID);
-    for (int i = 0; i < Warp::num_warps[mID]; ++i)         // for each warp point
+    const Warp::Warp_Point * warps = Warp::get_warp_table(dest_mID);
+    for (int i = 0; i < Warp::num_warps[dest_mID]; ++i)         // for each warp point
     {
-      if (dest.x == warps[i].p.x && dest.y == warps[i].p.y) { // if the destination is equal to the current warp point
+      if (dest.x() == warps[i].p.x() && dest.y() == warps[i].p.y()) { // if the destination is equal to the current warp point
         log_from(player,"warp point found");       // log a message that warp point has been identified
         if ( !suspend_warp(warps[i].dst) ) {                        // should the player take one final step before the warp takes place?
           do_warp(warps[i].dst);
@@ -173,34 +181,42 @@ void Player::update(float t, const Uint8* key_states)
       }
     }
 
-    Point spawn = dest; // this is of use when the player is trying to move to a neighbor map
-    if (wnode->in_overworld) { // in overworld logic: prepare to potentially check neighbor map
-      if (dest.y == scene_manager.maps[middle]->h_tiles) {
-        mID = wnode->up();           // change the mID to determine which p_collision to retrieve
-        dest.y = 0;                  // "overflow" destination coordinate
-        spawn.y = -1;                // update the location the player will need to be placed for the impending map update
+    Point spawn = dest;            // this is of use when the player is trying to move to a neighbor map
+    if (wnode->in_overworld) {     // in overworld logic: prepare to potentially check neighbor map
+      if ( wnode->mID[up] != null_map_id ) {
+        if ( dest.y() == Texture_Data::get_bounds(wnode->mID[up]).y() ) {
+          dest_mID = wnode->mID[up]; // change the mID to determine which p_collision to retrieve
+          dest.y() = 0;                // "overflow" destination coordinate
+          spawn.y() = -1;              // update the location the player will need to be placed for the impending map update
+        }
       }
-      else if (dest.x == -1) {
-        mID = wnode->left();
-        dest.x = scene_manager.maps[left]->w_tiles - 1;
-        spawn.x = scene_manager.maps[left]->w_tiles;
+      if ( wnode->mID[up] != null_map_id ) {
+        if ( dest.x() == -1 ) {
+          dest_mID = wnode->mID[left];
+          dest.x() = Texture_Data::get_bounds(dest_mID).x() - 1; // 1 to the left of position
+          spawn.x() = dest.x() + 1;                              // 1 to the right of destination
+        }
       }
-      else if (dest.y == -1) {
-        mID = wnode->down();
-        dest.y = scene_manager.maps[down]->h_tiles - 1;
-        spawn.y = scene_manager.maps[down]->h_tiles;
+      if ( wnode->mID[up] != null_map_id ) {
+        if ( dest.y() == -1 ) {
+          dest_mID = wnode->mID[down];
+          dest.y() = Texture_Data::get_bounds(dest_mID).x() - 1;
+          spawn.y() = dest.y() + 1;
+        }
       }
-      else if (dest.x == scene_manager.maps[middle]->w_tiles) {
-        mID = wnode->right();
-        dest.x = 0;
-        spawn.x = -1;
+      if ( wnode->mID[up] != null_map_id ) {
+        if ( dest.x() == Texture_Data::get_bounds(wnode->mID[right]).x() ) {
+          dest_mID = wnode->mID[right];
+          dest.x() = 0;
+          spawn.x() = -1;
+        }
       }
     }
-    if ( Collision_Data::allows_move_to(dest, mID) ) {
+    if ( Collision_Data::allows_move_to(dest, dest_mID) ) {
       if (fsm == fID && frame_prevent_interupt_counter == 0) {
         start_animation();
-        if (mID != wnode->mID) {
-          scene_manager.update_map(mID);
+        if (dest_mID != wnode->mID[0]) {      // if the destination is not the current map
+          scene_manager.sync_world(dest_mID);    // let the scene manager sync the world based on a destination Map_ID
           set_position(spawn);
         }
       }
@@ -208,7 +224,7 @@ void Player::update(float t, const Uint8* key_states)
     else {
       if (bump_counter == 0) {
         scene_manager.sound.play_sfx(bump_wall);
-        bump_counter= 32;
+        bump_counter= 16;
       }
     }
     if (bump_counter > 0) {
@@ -224,6 +240,18 @@ void Player::render()
 {
   glUseProgram(shader.handle);
   shader.set("player_mvp", cam.projection() * mv);
+//   if (first) {
+//     first=false;
+//     log_from(player,"P ",glm::to_string(cam->proj));
+//     mat4 mvp (cam->proj * mv);
+//     log_from(player,"MVP ",glm::to_string(mvp));
+//     glm::vec4 ndc (mvp * glm::vec4(-0.5f, 0.5f, 0.0f, 1.0f));
+//     log_from(player,"MVP * v[0] ",glm::to_string(ndc));
+//     ndc.x /= ndc.w;
+//     ndc.y /= ndc.w;
+//     ndc.z /= ndc.w;
+//     log_from(player,"normalized device coordinates: ",glm::to_string(ndc));
+//   }
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, t);
   glBindVertexArray(va);
@@ -237,10 +265,10 @@ void Player::render()
 // Shift the position of the player as well as the camera
 void Player::set_position(Point p)
 {
-  float x (p.x + 0.25f);
-  float y (p.y + 0.5f);
-  x_position= p.x;
-  y_position= p.y;
+  float x= p.x() + 0.25f;
+  float y= p.y() + 0.50f;
+  x_position= p.x();
+  y_position= p.y();
   vec3 xyCoordinates= vec3(x, y, .001f);
   model= translate(mat4(1.0f), xyCoordinates);
   cam.set_Position(vec3(x, y, cam.get_position().z));
@@ -280,7 +308,7 @@ void Player::do_warp(const Warp::Destination& dest)
 {
   log_from(player,"performing warp");
   fsm.input(dest.fID);                // input the facing direction
-  scene_manager.update_map(dest.mID); // sets current world node and changes maps array
+  scene_manager.sync_world(dest.mID); // sets current world node and changes maps array
   this->set_position(dest);           // update the player position
   if (dest.step_after)
     start_animation();
@@ -294,7 +322,6 @@ void Player::take_input(const Uint8* key_states)
   if (info_button_delay_counter == 0) {
     if (key_states[SDL_SCANCODE_P]) std::cout << "[Player] position = " << x_position << ',' << y_position << '\n';
     if (key_states[SDL_SCANCODE_F]) std::cout << "[Player] current frame state: " << fsm.get_fid() << '\n';
-    if (key_states[SDL_SCANCODE_0]) scene_manager.maps[middle]->is_visible = !scene_manager.maps[middle]->is_visible;
     info_button_delay_counter= 8;
   }
   if (info_button_delay_counter > 0) --info_button_delay_counter;
@@ -306,8 +333,8 @@ void Player::update_frame_to_stride()
 {
   if      (fsm == idle_l) fsm.input(stride_l1);
   else if (fsm == idle_r) fsm.input(stride_r1);
-  else if (fsm == idle_d) fsm.input((stride_left = !stride_left) ? stride_d1 : stride_d2);
-  else if (fsm == idle_u) fsm.input((stride_left = !stride_left) ? stride_u1 : stride_u2);
+  else if (fsm == idle_d) fsm.input((stride_left= !stride_left) ? stride_d1 : stride_d2);
+  else if (fsm == idle_u) fsm.input((stride_left= !stride_left) ? stride_u1 : stride_u2);
   else log_error_from(player,"failed to update frame to stride");
 }
 

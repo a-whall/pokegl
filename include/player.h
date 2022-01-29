@@ -4,6 +4,7 @@
 #include "animation.h"
 #include "warps.h"
 #include "world.h"
+#include "pair.h"
 
 namespace Scene { class Manager; }
 
@@ -17,6 +18,7 @@ class Player
   Scene::Manager & scene_manager;
 public:
   int x_position, y_position;
+  bool first=true;
 
   Player(Scene::Manager& , Shader&);
   ~Player();
