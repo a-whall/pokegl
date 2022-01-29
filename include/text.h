@@ -24,11 +24,11 @@ typedef std::string Text_Buffer;
 
 class Text_Manager
 {
-  Scene::Manager &scene_manager;             // reference to the owner of this Text_Manager
-  Text_Buffer text_buffer;                   // string data
-  Shader &text_box, &text_lines;             // 2 shaders
-  GLuint va, val, vbb, vbl, eb, ssb, tb, tl; // opengl object handles
-  int * char_buffer;                         // opengl string buffer
+  Scene::Manager &scene_manager;        // reference to the owner of this Text_Manager
+  Text_Buffer text_buffer;              // string data
+  Shader &text_box, &text_lines;        // 2 shaders
+  GLuint va, vbb, vbl, eb, ssb, tb, tl; // opengl object handles
+  int * gl_char_buffer_data;                    // opengl string buffer
 
 public:
 
