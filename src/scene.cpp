@@ -10,17 +10,15 @@ namespace Scene
 
 
 
-  void Manager::init_camera(int x, int y)
+  void Manager::init_camera(int w, int h)
   {
-    float aspect_ratio (x / y);
-    camera_controller = new Camera(vec3(0, 0, 5), vec3(0, 0, -1), aspect_ratio);
+    camera_controller = new Camera();
   }
 
 
 
   Player& Manager::new_player(Shader& s)
   {
-    Camera& c = *camera_controller;
     sprites.push_back(new Player(*this, s));
     return *sprites.back();
   }
@@ -36,98 +34,81 @@ namespace Scene
 
   void Manager::init_maps()
   {
-    Shader& s = new_shader("shader/MapSprite.glsl");
-    World_Node * active_wnode = world_graph->get_current_node();
-    if (active_wnode == nullptr)
-      log_error_abort(scene,"manager expected the world_graph to have a current world node");
-    Camera& c = *this->camera_controller;
-    maps[middle] = new Map(active_wnode->mID, c, s);
-    maps[up]     = new Map(null_map_id, c, s);
-    maps[left]   = new Map(null_map_id, c, s);
-    maps[down]   = new Map(null_map_id, c, s);
-    maps[right]  = new Map(null_map_id, c, s);
+    map_manager = new Map_Manager(*this);
+    // Shader& s = new_shader("shader/MapSprite.glsl");
+    // World_Node * active_wnode = world_graph->get_current_node();
+    // if (active_wnode == nullptr)
+    //   log_error_abort(scene,"manager expected the world_graph to have a current world node");
+    // Camera& c = *this->camera_controller;
+    // maps[middle] = new Map(active_wnode->mID, c, s);
+    // maps[up]     = new Map(null_map_id, c, s);
+    // maps[left]   = new Map(null_map_id, c, s);
+    // maps[down]   = new Map(null_map_id, c, s);
+    // maps[right]  = new Map(null_map_id, c, s);
   }
 
 
 
-  void Manager::update_map(Map_ID_enum mID)
+  void Manager::init_buffers()
   {
-    // This is a helper function that exchanges the map pointers to 3 of the 5 total map objects. This way, for example, when walking left onto a new map zone the maps which are already loaded on the gpu can be reused.
-    // Note: I was writing this and trying to get it to work and these random translations by (0,0) worked mysteriously. I was just testing, I'm not sure why the same translation for all maps ...just works...
-    auto cascade_maps = [&](Map_Orientation i1, Map_Orientation i2) {
-      Map * tmp = maps[i1];
-      maps[i1] = maps[middle];
-      maps[i1]->translate(0,0);
-      maps[i1]->is_visible=true;
-      maps[middle] = maps[i2];
-      maps[middle]->translate(0,0);
-      maps[middle]->is_visible=true;
-      maps[i2] = tmp;
-      maps[i2]->change(mID);
-      maps[i2]->translate(0,0);
-      maps[i2]->is_visible=true;
+
+    unsigned eb_data[]=
+    {
+      0, 1, 2,
+      2, 3, 0
     };
 
-    World_Node * wnode = world_graph->get_current_node();
+    float cvb_data[]=
+    {
+      -.5f, +.5f, 0.f,       0.f, 0.f,
+      +.5f, +.5f, 0.f,       1.f, 0.f,
+      +.5f, -.5f, 0.f,       1.f, 1.f,
+      -.5f, -.5f, 0.f,       0.f, 1.f
+    };
 
-    if      (wnode->up() == mID) cascade_maps(down,up);
-    else if (wnode->left() == mID) cascade_maps(right,left);
-    else if (wnode->down() == mID) cascade_maps(up,down);
-    else if (wnode->right() == mID) cascade_maps(left,right);
-    else maps[middle]->change(mID); // this will naturally happen for non-overworld maps.
+    float blvb_data[]=
+    {
+       0.f, +1.f, // top-left
+      +1.f, +1.f, // top-right
+      +1.f,  0.f, // bot-right
+       0.f,  0.f  // bot-left
+    };
 
-    World_Node * cnode = world_graph->set_current_node(mID);
+    // create scene vertex array object
+    glGenVertexArrays(1, &va);
+    std::cout << "scene sva: " << va << '\n';
+    // create buffer objects
+    glGenBuffers(1, &eb);
+    glGenBuffers(1, &cvb);
+    glGenBuffers(1, &blvb);
+    // bind the scene vertex array
+    glBindVertexArray(va);
+    // create the quad element buffer, this automatically binds to the currently bound vertex array
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eb);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(eb_data), eb_data, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glVertexArrayElementBuffer(va, eb);
 
-    // check to update music
-    if (get_area_track(cnode->mID) != get_area_track(wnode->mID))
-      sound.play_song(get_area_track(cnode->mID));
-
-    Map_ID_enum m; // temp value for the ifs below
-
-    if (cnode->in_overworld) {
-      log_from(scene,"cnode in overworld");
-      if ((m=cnode->up()) != null_map_id) {        // if the new up map has null id according to world graph:
-        //std::cout << "maps[up].id: " << maps[up]->current_mID << " current_node.up().id: " << m << '\n';
-        if (maps[up]->current_mID != m)               // if the up map hasn't already been swapped by cascade_maps:
-          maps[up]->change(m);                           // load the map
-        maps[up]->translate(0,maps[middle]->h_tiles); // translate the map sprite appropriately
-        maps[up]->update(0,nullptr);                  // update the map object so that the correct matrix is used for rendering
-        maps[up]->is_visible= true;                   // set the map to be visible
-      }
-      else maps[up]->is_visible= false;         // else turn the up maps visibility off
-      if ((m=cnode->left()) != null_map_id) {  // repeat
-        //std::cout << "maps[left].id: " << maps[left]->current_mID << " current_node.left().id: " << m << '\n';
-        if (maps[left]->current_mID != m)
-          maps[left]->change(m);
-        maps[left]->translate(-maps[left]->w_tiles,0);
-        maps[left]->update(0, nullptr);
-        maps[left]->is_visible= true;
-      }
-      else maps[left]->is_visible= false;
-      if ((m=cnode->down()) != null_map_id) {
-        //std::cout << "maps[down].id: " << maps[down]->current_mID << " current_node.down().id: " << m << '\n';
-        if (maps[down]->current_mID != m)
-          maps[down]->change(m);
-        maps[down]->translate(0,-maps[left]->h_tiles);
-        maps[down]->update(0,nullptr);
-        maps[down]->is_visible= true;
-      }
-      else maps[down]->is_visible= false;
-      if ((m=cnode->right()) != null_map_id) {
-        //std::cout << "maps[right].id: " << maps[right]->current_mID << " current_node.right().id: " << m << '\n';
-        if (maps[right]->current_mID != m)
-          maps[right]->change(m);
-        maps[right]->translate(maps[middle]->w_tiles,0);
-        maps[right]->update(0,nullptr);
-        maps[right]->is_visible= true;
-      }
-      else maps[right]->is_visible= false;
-    }
-    else {// set neighbors invisible
-      log_from(scene,"cnode is not in overworld");
-      maps[middle]->change(mID);
-      maps[up]->is_visible= maps[left]->is_visible= maps[down]->is_visible= maps[right]->is_visible= false;
-    }
+    // create the center-aligned quad vertex buffer
+    glBindBuffer(GL_ARRAY_BUFFER, cvb);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cvb_data), cvb_data, GL_STATIC_DRAW);
+    // DSA functions: affect currently bound Vertex Array Obj
+    glBindVertexBuffer(0, cvb, 0, 20);
+    glEnableVertexAttribArray(0);
+    glVertexAttribFormat(0, 3, GL_FLOAT, false, 0);
+    glVertexAttribBinding(0, 0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribFormat(1, 2, GL_FLOAT, false, 12);
+    glVertexAttribBinding(1, 0);
+    // create the bottom-left-aligned quad vertex buffer
+    glBindBuffer(GL_ARRAY_BUFFER, blvb);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(blvb_data), blvb_data, GL_STATIC_DRAW);
+    // DSA functions: affect currently bound Vertex Array Obj
+    glBindVertexBuffer(1, blvb, 0, 8); // stride = 8
+    glEnableVertexAttribArray(2);
+    glVertexAttribFormat(2, 2, GL_FLOAT, false, 0);
+    glVertexAttribBinding(2, 1);
+    glBindVertexArray(0);
   }
 
 
@@ -142,10 +123,24 @@ namespace Scene
 
 
 
+  void Manager::sync_world(Map_ID dest_mID)
+  {
+    Map_ID temp_mID = world_graph->get_current_node()->get_mID(); // store the current map id of the active world node
+
+    World_Node * cnode = world_graph->set_current_node(dest_mID); // update the current node
+
+    map_manager->update_maps(cnode);                              // update map textures and transform buffer
+
+    if (get_area_track(temp_mID) != get_area_track(dest_mID))     // update music
+      sound.play_song(get_area_track(dest_mID));
+  }
+
+
+
   void Manager::update(float t)
   {
     for (auto& s : sprites) s->update(t, key_states);
-    for (auto& m : maps)    m.second->update(t, key_states);
+    map_manager->update(t, key_states);
     text_manager->update(t, key_states);
   }
 
@@ -156,12 +151,7 @@ namespace Scene
     // if the active world node is flagged as being 'in_overworld' then render all maps
     // otherwise print only the main map (which would be a self contained indoor location)
     // after that render sprites.
-    if (world_graph->get_current_node()->in_overworld) {
-      for (auto& m : maps) if (m.second->current_mID != null_map_id) m.second->render();
-    }
-    else {
-      maps[middle]->render();
-    }
+    map_manager->render();
     for (auto& s : sprites) s->render();
     // TODO: render grass, etc, things that need to be rendered over the player
     text_manager->render();
@@ -173,7 +163,7 @@ namespace Scene
   {
     delete world_graph;
     for (auto& s: sprites) delete s;
-    for (auto& m: maps)    delete m.second;
+    delete map_manager;
     for (auto& s: shaders) delete s;
     delete text_manager;
   }

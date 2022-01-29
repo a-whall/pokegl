@@ -10,10 +10,14 @@
 #include "map_orientation.h"
 #include "text.h"
 
+
+
 namespace Scene
 {
   using std::unordered_map;
   using std::vector;
+
+
 
   class Manager
   {
@@ -22,21 +26,27 @@ namespace Scene
 
   public:
 
-    Text_Manager * text_manager;
-    unordered_map<Map_Orientation,Map*> maps;
+    GLuint va, eb, cvb, blvb; // sprite vertex array,  quad element buffer,  center-aligned quad vertex buffer,  bottom-left-aligned quad vertex buffer. (alignment with origin)
+    Map_Manager * map_manager;
+    Text_Manager * text_manager; // manages its own va
     Sound_Manager sound;
     World_Graph * world_graph= nullptr;
     Camera * camera_controller= nullptr;
     const Uint8 * key_states= nullptr;
 
-    void init_camera(int, int);
-    Player& new_player(Shader & s);
-    Shader& new_shader(const char *);
+    Player & new_player(Shader & s);
+    Shader & new_shader(const char *);
+
+    void init_camera(int w, int h);
     void init_maps();
     void init_text();
-    void update_map(Map_ID_enum);
+    void init_buffers();
+
+    void sync_world(Map_ID);
+
     void update(float t);
     void render();
+
     void clean();
     void refresh();
   };
