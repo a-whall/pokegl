@@ -35,16 +35,6 @@ namespace Scene
   void Manager::init_maps()
   {
     map_manager = new Map_Manager(*this);
-    // Shader& s = new_shader("shader/MapSprite.glsl");
-    // World_Node * active_wnode = world_graph->get_current_node();
-    // if (active_wnode == nullptr)
-    //   log_error_abort(scene,"manager expected the world_graph to have a current world node");
-    // Camera& c = *this->camera_controller;
-    // maps[middle] = new Map(active_wnode->mID, c, s);
-    // maps[up]     = new Map(null_map_id, c, s);
-    // maps[left]   = new Map(null_map_id, c, s);
-    // maps[down]   = new Map(null_map_id, c, s);
-    // maps[right]  = new Map(null_map_id, c, s);
   }
 
 
