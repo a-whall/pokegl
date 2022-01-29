@@ -144,12 +144,11 @@ enum Map_ID : std::uint8_t
   max_map_id // <= 255 due to 8 bit type
 };
 
+
 typedef  Map_ID  Map_ID_enum;
 
-// TODO: move this to a better file
-typedef struct X_Y_pair { int x, y; } Point, SpawnPoint;
 
-constexpr const char * to_str[max_map_id]=
+constexpr const char * map_str[max_map_id]=
 {
   "null_map_id",
   // New Bark Town
