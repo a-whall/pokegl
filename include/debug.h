@@ -57,7 +57,7 @@ namespace Debug
     sprite      = 0x00010000,
     code        = 0x00020000, // This channel prints glsl source code as it is parsed from file in the compile function during the pre-processing stage.
     object      = 0x00040000, // This channel turns on yellow alloc and dealloc notifications for objects in pokegl. The objects channel must be enabled as well.
-    //open      = 0x00080000,
+    texture     = 0x00080000,
     //open      = 0x00100000,
     //open      = 0x00200000,
     //open      = 0x00400000,
