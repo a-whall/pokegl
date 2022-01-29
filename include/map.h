@@ -1,31 +1,41 @@
 #pragma once
-#include "sprite.h"
+#include <SDL.h>
+#include <GL/glew.h>
+#include <unordered_map>
+#include <vector>
 #include "mapid.h"
+#include "map_orientation.h"
+#include "texid.h"
 
+
+
+namespace Scene { class Manager; };
+class Camera;
+class Shader;
 class World_Node;
 
-class Map
-: public Sprite
+
+
+const char * get_tex_path(Tex_ID);
+const char * get_tex_path(Map_ID);
+
+
+
+class Map_Manager
 {
-  GLuint va, vb, eb, t;
+  Scene::Manager & scene_manager;
+  GLuint ivb, t[max_tex_id]; // instanced buffer, texture array which will store the gl texture object id for all map textures
+  Shader & map_shader;
+  std::vector<float> ibuf; // 0 initialized
+  int counter;
 
 public:
 
-  int w=32, h=32, w_tiles=0, h_tiles=0, counter=0;
-  Map_ID_enum current_mID;
-  World_Node * world_node;
-  bool is_visible=true;
+  Map_Manager(Scene::Manager &man);
+  ~Map_Manager();
 
-  Map(Map_ID_enum mID, Camera &c, Shader &s);
-  ~Map();
-
-  void update(float t, const Uint8* keystates) override;
-  void render() override;
-  void translate(float, float);
-  void change(Map_ID_enum mID);
-
-private:
-
-  void init_buffers() override;
-  void try_to_load_texture();
+  void update(float, const Uint8 *);
+  void render();
+  void try_to_load_texture(Map_ID, int);
+  void update_maps(World_Node *);
 };
