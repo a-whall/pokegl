@@ -2,7 +2,7 @@
 #include <SDL_image.h>
 #include "shader.h"
 #include "collision.h"
-#include "map.h"
+#include "maps.h"
 #include "animation.h"
 #include "player.h"
 #include "debug.h"
@@ -149,7 +149,7 @@ void Application::init_window_and_keystates_SDL(const char* title, int x, int y,
   sdl.p_window= SDL_CreateWindow(title, x, y, w, h, fullscreen);
   scene_manager.key_states= sdl.p_key_states= SDL_GetKeyboardState(nullptr);
   log_from(application,"SDL window initialized");
-  scene_manager.init_camera(x,y);
+  scene_manager.init_camera(w,h);
   log_from(application,"camera initialized");
 }
 
@@ -223,4 +223,21 @@ void Application::print_opengl_extensions()
   {
     log<cout>("\t\t",glGetStringi(GL_EXTENSIONS,i));
   }
+}
+
+
+
+void Application::print_nvidia_memory_info()
+{
+  #define GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX 0x9048
+  #define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
+
+  GLint total_mem_kb = 0;
+  glGetIntegerv(GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX, &total_mem_kb);
+
+  GLint cur_avail_mem_kb = 0;
+  glGetIntegerv(GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX, &cur_avail_mem_kb);
+
+  log_from(all, "Total available memory: ",total_mem_kb," kb\n"
+    "Memory currently available: ",cur_avail_mem_kb," kb\n");
 }
