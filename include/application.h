@@ -25,6 +25,7 @@ protected:
   Scene::Manager scene_manager;
   bool running=false;
   void print_opengl_extensions();
+  void print_nvidia_memory_info();
 public:  
   void init(const char*, int, int, int, int, int);
   void step(float);
