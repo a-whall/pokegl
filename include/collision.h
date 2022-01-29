@@ -1,18 +1,15 @@
 #pragma once
 #include <GL/glew.h>
 #include "debug.h"
-#include "map.h"
+#include "mapid.h"
+#include "pair.h"
 
 // This header contains map collision data and a function signature for a function that returns a pointer to collision data
 
 namespace Collision_Data
 {
-  extern std::unordered_map< Map_ID_enum, Point > bounds;
-
   const GLubyte * get_ptr(Map_ID_enum);
 
-  void init();
-  void try_to_def_bounds(Map_ID_enum, int, int);
   bool allows_move_to(Point, Map_ID_enum);
 
   constexpr GLubyte new_bark_town_collision_data[72]=
