@@ -1,6 +1,7 @@
 #pragma once
 #include "mapid.h"
 #include "frameid.h"
+#include "pair.h"
 
 namespace Warp
 { 
