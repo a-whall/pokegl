@@ -111,6 +111,7 @@ const char* Debug::str(Debug_Source_enum src_enum)
     case sound:       return "[Sound ] ";
     case shader:      return "[Shader] ";
     case text:        return "[ Text ] ";
+    case texture:     return "[Textur] ";
     case world:       return "[World ] ";
     default:          return "[      ] ";
   }
