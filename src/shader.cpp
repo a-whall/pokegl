@@ -66,6 +66,7 @@ Shader& Shader::set(const char* name, bool b)                 { glUniform1i(get_
 Shader& Shader::set(const char* name, float f)                { glUniform1f(get_uniform_location(name), f);                                 return *this; }
 Shader& Shader::set(const char* name, float x, float y, float z){ glUniform3f(get_uniform_location(name), x, y, z);                         return *this; }
 Shader& Shader::set(const char* name, float x, float y, float z, float w){ glUniform4f(get_uniform_location(name), x, y, z, w);             return *this; }
+Shader& Shader::set(const char* name, glm::vec2 v)            { glUniform2f(get_uniform_location(name), v.x, v.y); }
 Shader& Shader::set(const char* name, glm::vec3 v)            { glUniform3f(get_uniform_location(name), v.x, v.y, v.z);                     return *this; }
 Shader& Shader::set(const char* name, glm::vec4 v)            { glUniform4f(get_uniform_location(name), v.x, v.y, v.z, v.w);                return *this; }
 Shader& Shader::set(const char* name, const glm::mat2 m)            { glUniformMatrix2fv(get_uniform_location(name), 1, GL_FALSE, &m[0][0]);return *this; }
@@ -282,7 +283,9 @@ void Shader::log_program_resources()
 {
   if (!(shader & output_filter))
     return;
-  log_from(shader,cyan,"active",reset," program resources (",pink,handle,reset,')');
+  log_from(shader,"------------------------------\n\t  ",
+  cyan,"active",reset," program resources (",pink,handle,reset,")\n"
+  "\t ------------------------------");
   log(handle,GL_PROGRAM_INPUT);
   log(handle,GL_UNIFORM);
   log<cout>();
