@@ -2,7 +2,7 @@
 #include <SDL_image.h>
 #include "shader.h"
 #include "collision.h"
-#include "maps.h"
+//#include "maps.h"
 #include "animation.h"
 #include "player.h"
 #include "debug.h"
