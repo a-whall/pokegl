@@ -10,10 +10,7 @@ using namespace Debug;
 #include "pair.h"
 
 
-// TODO: width and height scaling of maps
 // TODO: shift of maps based on neighbors and instance id
-// TODO: active texture-object, texture-unit and ibuf management
-// TODO: texture object array access via Tex_ID
 
 
 Map_Manager::Map_Manager(Scene::Manager &man)
@@ -95,9 +92,7 @@ void Map_Manager::render()
   glUseProgram(map_shader.handle);
   Camera *c = scene_manager.camera_controller;
   map_shader.set("cam_offset", glm::vec2(c->get_position().x, c->get_position().y));
-  glBindVertexArray(scene_manager.va);
-  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, 1); // Note: fixed a bug where calling glDrawElements or glDrawElementsInstanced crashed the program with a segfault. The reason was that I forgot to call glVertexAttribBinding. I think binding index may default to 0 without that call. So the map Shader was expecting to find (and read from) attrib location 3 on the buffer bound to vao index 0, which was only supplying data to attrib location 0 and 1. Thus it was trying to read memory out of bounds.
-  glBindVertexArray(0);
+  glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, n_active_maps); // Note: fixed a bug where calling glDrawElements or glDrawElementsInstanced crashed the program with a segfault. The reason was that I forgot to call glVertexAttribBinding. I think binding index may default to 0 without that call. So the map Shader was expecting to find (and read from) attrib location 3 on the buffer bound to vao index 0, which was only supplying data to attrib location 0 and 1. Thus it was trying to read memory out of bounds.
   glUseProgram(0);
 }
 
@@ -155,5 +150,6 @@ void Map_Manager::update_maps(World_Node * curr_node)
       uo += 1;
     }
   }
+  n_active_maps= uo;
   glNamedBufferSubData(ivb, 0, ibuf.size() * sizeof(float), ibuf.data());
 }
