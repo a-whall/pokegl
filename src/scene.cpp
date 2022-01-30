@@ -39,6 +39,7 @@ namespace Scene
 
 
 
+  // initializes the one and only vertex array as well as 
   void Manager::init_buffers()
   {
 
@@ -50,10 +51,10 @@ namespace Scene
 
     float cvb_data[]=
     {
-      -.5f, +.5f, 0.f,       0.f, 0.f,
-      +.5f, +.5f, 0.f,       1.f, 0.f,
-      +.5f, -.5f, 0.f,       1.f, 1.f,
-      -.5f, -.5f, 0.f,       0.f, 1.f
+      -.5f, +.5f,       0.f, 0.f,
+      +.5f, +.5f,       1.f, 0.f,
+      +.5f, -.5f,       1.f, 1.f,
+      -.5f, -.5f,       0.f, 1.f
     };
 
     float blvb_data[]=
@@ -66,30 +67,32 @@ namespace Scene
 
     // create scene vertex array object
     glGenVertexArrays(1, &va);
-    std::cout << "scene sva: " << va << '\n';
+
     // create buffer objects
     glGenBuffers(1, &eb);
     glGenBuffers(1, &cvb);
     glGenBuffers(1, &blvb);
+
     // bind the scene vertex array
     glBindVertexArray(va);
+
     // create the quad element buffer, this automatically binds to the currently bound vertex array
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eb);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(eb_data), eb_data, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    // attach the element buffer to the vaobj
     glVertexArrayElementBuffer(va, eb);
 
     // create the center-aligned quad vertex buffer
     glBindBuffer(GL_ARRAY_BUFFER, cvb);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cvb_data), cvb_data, GL_STATIC_DRAW);
     // DSA functions: affect currently bound Vertex Array Obj
-    glBindVertexBuffer(0, cvb, 0, 20);
+    glBindVertexBuffer(0, cvb, 0, 16);
     glEnableVertexAttribArray(0);
-    glVertexAttribFormat(0, 3, GL_FLOAT, false, 0);
+    glVertexAttribFormat(0, 4, GL_FLOAT, false, 0);
     glVertexAttribBinding(0, 0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribFormat(1, 2, GL_FLOAT, false, 12);
-    glVertexAttribBinding(1, 0);
+
     // create the bottom-left-aligned quad vertex buffer
     glBindBuffer(GL_ARRAY_BUFFER, blvb);
     glBufferData(GL_ARRAY_BUFFER, sizeof(blvb_data), blvb_data, GL_STATIC_DRAW);
@@ -98,7 +101,7 @@ namespace Scene
     glEnableVertexAttribArray(2);
     glVertexAttribFormat(2, 2, GL_FLOAT, false, 0);
     glVertexAttribBinding(2, 1);
-    glBindVertexArray(0);
+
   }
 
 
@@ -141,8 +144,10 @@ namespace Scene
     // if the active world node is flagged as being 'in_overworld' then render all maps
     // otherwise print only the main map (which would be a self contained indoor location)
     // after that render sprites.
+
     map_manager->render();
     for (auto& s : sprites) s->render();
+
     // TODO: render grass, etc, things that need to be rendered over the player
     text_manager->render();
   }
