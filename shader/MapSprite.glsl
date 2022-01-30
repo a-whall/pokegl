@@ -1,13 +1,24 @@
 #shader vertex
 #version 460
 
+// per-vertex 2D position.
+layout (location= 2)
+in vec2 vpos;
+
+// per-instance 2D scale and 2D shift, packed into a vec4.
+layout (location= 3)
+in vec4 ibuf;
+
+// active multi-texture unit from which to sample.
+flat
+out int tex_unit;
+
+// texture coordinates with which to sample.
+out vec2 tex_coord;
+
+// used to keep up with camera movement.
 uniform vec2 cam_offset;
 
-layout (location= 2) in vec2 vpos; // per vertex 2D position
-layout (location= 3) in vec4 ibuf; // per instance 2D scale and 2D shift
-
-flat out int tex_unit; // the active multi-texture unit to sample from
-out vec2 tex_coord; // out variables that are not flat are automatically interpolated between neighboring verts in the primitive being rendered.
 
 void main()
 {
@@ -23,13 +34,19 @@ void main()
   tex_unit = gl_InstanceID + 1;
   gl_Position = vec4(pos, 0.97, 1);
 }
+
+
+
 #shader fragment
 #version 460
 
-flat in int tex_unit;
+flat
+in int tex_unit;
 in vec2 tex_coord;
 
-layout (location= 0) out vec4 map_frag_color;
+// pixel color.
+layout (location= 0)
+out vec4 map_frag_color;
 
 // layout (binding=x) uniform sampler2D t; is the equivalent of getting the uniform location for "t" and setting its uniform value to "x". GLSL 4.2 required.
 layout (binding= 1) uniform sampler2D t1;
@@ -37,6 +54,7 @@ layout (binding= 2) uniform sampler2D t2;
 layout (binding= 3) uniform sampler2D t3;
 layout (binding= 4) uniform sampler2D t4;
 layout (binding= 5) uniform sampler2D t5;
+
 
 void main()
 {
