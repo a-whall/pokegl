@@ -16,7 +16,10 @@ void main()
   vec2 pos = vec2( vpos.x * s.x /*- .25*/ , vpos.y * s.y /*- .25*/);
   pos.x -= cam_offset.x / 5;
   pos.y -= cam_offset.y / 5;
-  tex_coord = mix( vec2(vpos.x,1), vec2(vpos.x,0), vpos.y == 1);
+  tex_coord = vpos;
+  if (tex_coord.y == 1) tex_coord.y = 0;
+  else
+  if (tex_coord.y == 0) tex_coord.y = 1;
   tex_unit = gl_InstanceID + 1;
   gl_Position = vec4(pos, 0.97, 1);
 }

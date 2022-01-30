@@ -20,7 +20,11 @@ void main()
 {
   int col = 0, row = 0;
 
-  tex_coord = mix( vec2( vert_pos.x, 1), vec2(vert_pos.x, 0), vert_pos.y == 1);
+  tex_coord = vert_pos;
+  // switch the tex coord y position, this allows us to only store position in the buffer
+  if (tex_coord.y == 1) tex_coord.y = 0;
+  else
+  if (tex_coord.y == 0) tex_coord.y = 1;
 
   char_data = char_at[baseID + gl_InstanceID];
 
