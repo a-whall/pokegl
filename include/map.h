@@ -28,6 +28,7 @@ class Map_Manager
   Shader & map_shader;
   std::vector<float> ibuf; // 0 initialized
   int counter;
+  int n_active_maps= 1;
 
 public:
 
