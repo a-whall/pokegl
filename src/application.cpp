@@ -2,7 +2,6 @@
 #include <SDL_image.h>
 #include "shader.h"
 #include "collision.h"
-//#include "maps.h"
 #include "animation.h"
 #include "player.h"
 #include "debug.h"
@@ -63,7 +62,7 @@ void Application::step(float frame_time)
   SDL_GL_SwapWindow(sdl.p_window);                  // present frame-buffer to window
 
   // update program frame time stat
-  update_fdt_average(dt = SDL_GetTicks() - frame_begin);
+  update_fdt_average(dt= SDL_GetTicks() - frame_begin);
 
   // limit fps
   if (dt < frame_time) SDL_Delay(frame_time - dt);
@@ -158,7 +157,7 @@ void Application::init_window_and_keystates_SDL(const char* title, int x, int y,
 // Create an OpenGL context, glsl = version 4.5, core profile => forward compatibility glsl, debugging is
 void Application::config_opengl_context_SDL()
 {
-  int core_profile = 1, debug = 1, ver_maj = 4, ver_min = 5;
+  int core_profile= 1, debug= 1, ver_maj= 4, ver_min= 5;
 
   if ( sdl.context= SDL_GL_CreateContext(sdl.p_window) ) {
     // set context attributes
@@ -194,8 +193,8 @@ void Application::config_opengl_context_SDL()
 
 void Application::wrangle_modern_opengl_api_GLEW()
 {
-  glewExperimental = GL_TRUE; // declared in glew.h
-  GLenum glew_error = glewInit();
+  glewExperimental= GL_TRUE; // declared in glew.h
+  GLenum glew_error= glewInit();
   if (glew_error != GLEW_OK)
     log_error_from(application,"GLEW failed to initialize: ",glewGetErrorString(glew_error));
   log_from(application,"OpenGL function pointers loaded");
@@ -219,7 +218,7 @@ void Application::print_opengl_extensions()
   GLint n_extensions, i;
   glGetIntegerv(GL_NUM_EXTENSIONS, &n_extensions);
   log<cout>("[Application] ",n_extensions," OpenGL extensions found to be implemented by this hardware");
-  for (i = 0; i < n_extensions; i++)
+  for (i= 0; i < n_extensions; i++)
   {
     log<cout>("\t\t",glGetStringi(GL_EXTENSIONS,i));
   }
@@ -232,10 +231,10 @@ void Application::print_nvidia_memory_info()
   #define GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX 0x9048
   #define GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX 0x9049
 
-  GLint total_mem_kb = 0;
+  GLint total_mem_kb= 0;
   glGetIntegerv(GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX, &total_mem_kb);
 
-  GLint cur_avail_mem_kb = 0;
+  GLint cur_avail_mem_kb= 0;
   glGetIntegerv(GL_GPU_MEM_INFO_CURRENT_AVAILABLE_MEM_NVX, &cur_avail_mem_kb);
 
   log_from(all, "Total available memory: ",total_mem_kb," kb\n"
