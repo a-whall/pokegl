@@ -27,82 +27,19 @@ Text_Manager::Text_Manager(Scene::Manager &man)
 
   // allocate and zero the char buffer (aka fill it with spaces)
   gl_char_buffer_data= new GLint[char_buffer_size];
-  for (int i = 0; i < char_buffer_size; ++i)
-    gl_char_buffer_data[i] = 0;
+  for (int i= 0; i < char_buffer_size; ++i)
+    gl_char_buffer_data[i]= 0;
 
-  // character text lines shader vertex buffer
-  float vbl_data[]= // non-negative unit square
-  {//x     y
-     0.f, +1.f, // top-left
-    +1.f, +1.f, // top-right
-    +1.f,  0.f, // bot-right
-     0.f,  0.f  // bot-left
-  };
-
-  // box background shader vertex buffer
-  float vbb_data[]= // centered unit square with texture coordinates per vertex
-  {// x     y    u    v
-    -.5f, +.5f,  0.f, 0.f,
-    +.5f, +.5f,  1.f, 0.f,
-    +.5f, -.5f,  1.f, 1.f,
-    -.5f, -.5f,  0.f, 1.f
-  };
-
-  // standard quad element buffer
-  unsigned eb_data[]=
-  {
-    0, 1, 2,
-    2, 3, 0
-  };
-
-// Begin initializing vertex array state and creating buffers
-
-  // generate opengl objects
-  glGenVertexArrays(1, &va);
-  glGenBuffers(1, &eb);
-  glGenBuffers(1, &vbl);
-  glGenBuffers(1, &vbb);
-  glGenBuffers(1, &ssb);
-
-  log_from(text,obj_addr(this),":\n\t"
-    " | generated 1 vertex array object: ",va,"\n\t"
-    " | and 4 buffer objects:\n\t"
-    " |     element buffer       : ",eb, "\n\t"
-    " |     vertex buffer (lines): ",vbl,"\n\t"
-    " |     vertex buffer (box)  : ",vbb,"\n\t"
-    " |     shader storage buffer: ",ssb,'\n');
-
-  // bind the text managers vertex array object
-  glBindVertexArray(va);
-
-  // permanently set this as the index buffer for the currently bound vertex array
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eb);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(eb_data), eb_data, GL_STATIC_DRAW);
-
-  // create the vertex buffer for text lines
-  glBindBuffer(GL_ARRAY_BUFFER, vbl);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vbl_data), vbl_data, GL_STATIC_DRAW);
-
-  // DSA functions: affect currently bound Vertex Array Obj
-  glBindVertexBuffer(0, vbl, 0, 8);
-  glEnableVertexAttribArray(0);
-  glVertexAttribFormat(0, 4, GL_FLOAT, false, 0);
-
-  // create the vertex buffer for text box
-  glBindBuffer(GL_ARRAY_BUFFER, vbb);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vbb_data), vbb_data, GL_STATIC_DRAW);
-
-  // DSA functions: affect currently bound Vertex Array Obj
-  glBindVertexBuffer(1, vbb, 0, 16);
-  glEnableVertexAttribArray(1);
-  glVertexAttribFormat(1, 4, GL_FLOAT, false, 0);
+  // copy scene buffers
+  va= scene_manager.va;
+  eb= scene_manager.eb;
+  vbl= scene_manager.blvb;
+  vbb= scene_manager.cvb;
 
   // create the shader storage buffer object which will act as the string data
+  glGenBuffers(1, &ssb);
   glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssb);
   glBufferData(GL_SHADER_STORAGE_BUFFER, char_buffer_size * sizeof(int), gl_char_buffer_data, GL_DYNAMIC_DRAW);
-
-  // finished modifying state
-  glBindVertexArray(0);
 
   // initialize text-lines texture object
   std::vector<const char*> char_sprite_paths= { // note: order matches ascii starting at space
@@ -214,17 +151,13 @@ Text_Manager::Text_Manager(Scene::Manager &man)
   image_data= load_textures({"assets/textbox.png"}, textbox, this, &w, &h, 4);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, image_data);
   delete image_data;
-
-  // manually set textbox_texture uniform to 0
-  glUseProgram(text_box.handle);
-  text_box.set("textbox_texture",0); // assumes active-texture-slot == GL_TEXTURE0
-  glUseProgram(0);
 }
 
 
 
 Text_Manager::~Text_Manager()
 {
+  glDeleteBuffers(1, &ssb);
   obj_identify(text,dealloc,this,"Text-Manager");
 }
 
@@ -316,7 +249,7 @@ void Text_Manager::render()
 {
   if (!dialog)
     return;
-  glBindVertexArray(va);
+
   glUseProgram(text_box.handle);
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D, tb);
@@ -327,7 +260,6 @@ void Text_Manager::render()
     glBindTexture(GL_TEXTURE_2D_ARRAY, tl);
     glDrawElementsInstanced(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0, ci - si);
   }
-  glBindVertexArray(0);
   glUseProgram(0);
 }
 
@@ -353,10 +285,8 @@ void Text_Manager::update_gl_char_buffer( )
     gl_char_buffer_data[i] = ch - 32;
   }
   // send new string data to GPU (likely not the whole buffer)
-  glBindVertexArray(va);
   glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssb);
   glBufferSubData(GL_SHADER_STORAGE_BUFFER, si * sizeof(int), len * sizeof(int), gl_char_buffer_data);
-  glBindVertexArray(0);
 }
 
 
