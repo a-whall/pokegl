@@ -1,13 +1,18 @@
 #shader vertex
 #version 460
 
-layout (location = 0) in vec2 vert_pos;
-layout (std430, binding = 0) buffer char_buffer {
+layout (location= 2)
+in vec2 vert_pos;
+
+layout (std430, binding= 0)
+buffer char_buffer {
   int char_at[];
 };
 
+flat
+out int char_data;
+
 out vec2 tex_coord;
-flat out int char_data;
 
 uniform int baseID         = 0;
 uniform float top_margin   = +1.55;
@@ -15,6 +20,7 @@ uniform float left_margin  = +0.06;
 uniform float text_size    = +0.13;
 uniform float char_spacing = -0.01;
 uniform float line_spacing = +0.10;
+
 
 void main()
 {
@@ -47,22 +53,31 @@ void main()
 
   gl_Position = vec4(x, y, -.1, 1);
 }
+
+
+
 #shader fragment
 #version 460
 
+flat
+in int char_data;
+
 in vec2 tex_coord;
 
-flat in int char_data;
+layout (location= 0)
+out vec4 text_frag_color;
 
-layout( location = 0 ) out vec4 text_frag_color;
+layout (binding= 0)
+uniform sampler2DArray char_dict; // texture sampler object, requires at least #version 420.
 
-layout( binding = 0 ) uniform sampler2DArray char_dict; // texture sampler object, requires at least #version 420.
 
 void main()
 {
   text_frag_color = texture( char_dict, vec3(tex_coord, char_data) );
 }
 #end
+
+
 
 # How It Works In Depth:
 ------------------------
