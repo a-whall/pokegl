@@ -36,9 +36,6 @@ Player::Player(Scene::Manager& man, Shader &s)
   fsm.set_shader(&shader);
   init_buffers();
   init_animations();
-  glUseProgram(shader.handle);
-  shader.set("player_frame_ID", idle_d);
-  glUseProgram(0);
 }
 
 
@@ -46,9 +43,6 @@ Player::Player(Scene::Manager& man, Shader &s)
 // Player destructor : Delete all OpenGL objects associated with this player sprite
 Player::~Player()
 {
-  glDeleteBuffers(1, &vb);
-  glDeleteBuffers(1, &eb);
-  glDeleteVertexArrays(1, &va);
   glDeleteTextures(1, &t);
   obj_identify(player,dealloc,this,"Player");
 }
@@ -103,33 +97,12 @@ void Player::init_animations()
 // This function declares VBO and EBO data temporarily on stack and sends it to the GPU. VBO and EBO data will not change for the duration of the program. VBO data represents model coordinates of the player texture, i.e. a 1x1 quad centered on origin, as well as texture coordinates for texture mapping which is handled by OpenGL. EBO data represents the order in which vertices in the VBO are to be drawn to make triangles by the OpenGL draw calls.
 void Player::init_buffers()
 {
-  float vb_data[]=
-  {
-    -.5f, +.5f, 0.f,       0.f, 0.f,
-    +.5f, +.5f, 0.f,       1.f, 0.f,
-    +.5f, -.5f, 0.f,       1.f, 1.f,
-    -.5f, -.5f, 0.f,       0.f, 1.f
-  };
-  unsigned eb_data[]=
-  {
-    0, 1, 2,
-    2, 3, 0
-  };
   n_verts= 6;
-  glGenVertexArrays(1, &va);
-  glGenBuffers(1, &eb);
-  glGenBuffers(1, &vb);
-  log_from(player,"specifying buffers");
-  glBindVertexArray(va);
-  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eb);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(eb_data), eb_data, GL_STATIC_DRAW);
-  glBindBuffer(GL_ARRAY_BUFFER, vb);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vb_data), vb_data, GL_STATIC_DRAW);
-  glEnableVertexArrayAttrib(va, 0);
-  glVertexAttribPointer(0, 3, GL_FLOAT, false, 20, (void*)0);
-  glEnableVertexArrayAttrib(va, 1);
-  glVertexAttribPointer(1, 2, GL_FLOAT, false, 20, (void*)12);
-  glBindVertexArray(0);
+
+  // copy scene buffers
+  va = scene_manager.va;
+  eb = scene_manager.eb;
+  vb = scene_manager.cvb;
 }
 
 
@@ -140,13 +113,6 @@ void Player::init_buffers()
 void Player::update(float t, const Uint8* key_states)
 {
   mv= cam.view() * model;
-//   if (first) {
-//     log_from(player,"M ",glm::to_string(model));
-//     log_from(player,"V ",glm::to_string(cam->view));
-//     log_from(player,"MV ",glm::to_string(mv));
-//   }
-  
-  //log_from(player,"V ",glm::to_string(cam.view()));
 
   if (frame_prevent_interupt_counter) {
     // TODO: more general continue_animation() function, along with a higher level animation-state value to decide which animation to 'continue'
@@ -185,27 +151,31 @@ void Player::update(float t, const Uint8* key_states)
     if (wnode->in_overworld) {     // in overworld logic: prepare to potentially check neighbor map
       if ( wnode->mID[up] != null_map_id ) {
         if ( dest.y() == Texture_Data::get_bounds(wnode->mID[up]).y() ) {
+          log_from(player, "swapping dest to go left");
           dest_mID = wnode->mID[up]; // change the mID to determine which p_collision to retrieve
           dest.y() = 0;                // "overflow" destination coordinate
           spawn.y() = -1;              // update the location the player will need to be placed for the impending map update
         }
       }
-      if ( wnode->mID[up] != null_map_id ) {
+      if ( wnode->mID[left] != null_map_id ) {
         if ( dest.x() == -1 ) {
+          log_from(player, "swapping dest to go down");
           dest_mID = wnode->mID[left];
           dest.x() = Texture_Data::get_bounds(dest_mID).x() - 1; // 1 to the left of position
           spawn.x() = dest.x() + 1;                              // 1 to the right of destination
         }
       }
-      if ( wnode->mID[up] != null_map_id ) {
+      if ( wnode->mID[down] != null_map_id ) {
         if ( dest.y() == -1 ) {
+          log_from(player, "swapping dest to go down");
           dest_mID = wnode->mID[down];
           dest.y() = Texture_Data::get_bounds(dest_mID).x() - 1;
           spawn.y() = dest.y() + 1;
         }
       }
-      if ( wnode->mID[up] != null_map_id ) {
-        if ( dest.x() == Texture_Data::get_bounds(wnode->mID[right]).x() ) {
+      if ( wnode->mID[right] != null_map_id ) {
+        if ( dest.x() == Texture_Data::get_bounds(wnode->mID[middle]).x() ) {
+          log_from(player, "swapping dest to go right");
           dest_mID = wnode->mID[right];
           dest.x() = 0;
           spawn.x() = -1;
@@ -240,23 +210,9 @@ void Player::render()
 {
   glUseProgram(shader.handle);
   shader.set("player_mvp", cam.projection() * mv);
-//   if (first) {
-//     first=false;
-//     log_from(player,"P ",glm::to_string(cam->proj));
-//     mat4 mvp (cam->proj * mv);
-//     log_from(player,"MVP ",glm::to_string(mvp));
-//     glm::vec4 ndc (mvp * glm::vec4(-0.5f, 0.5f, 0.0f, 1.0f));
-//     log_from(player,"MVP * v[0] ",glm::to_string(ndc));
-//     ndc.x /= ndc.w;
-//     ndc.y /= ndc.w;
-//     ndc.z /= ndc.w;
-//     log_from(player,"normalized device coordinates: ",glm::to_string(ndc));
-//   }
   glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_2D_ARRAY, t);
-  glBindVertexArray(va);
   glDrawElements(GL_TRIANGLES, n_verts, GL_UNSIGNED_INT, 0);
-  glBindVertexArray(0);
   glUseProgram(0);
 }
 
